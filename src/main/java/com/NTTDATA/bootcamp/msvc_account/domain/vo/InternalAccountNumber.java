@@ -1,5 +1,6 @@
 package com.NTTDATA.bootcamp.msvc_account.domain.vo;
 
+import com.NTTDATA.bootcamp.msvc_account.domain.util.AccountNumberGenerator;
 import lombok.Getter;
 
 import java.util.List;
@@ -15,6 +16,10 @@ public final class InternalAccountNumber {
         if (value == null || value.isEmpty()) throw new IllegalArgumentException("InternalAccountNumber cannot be null or blank");
         if (!isValidInternalAccountNumber(value)) throw new IllegalArgumentException("InternalAccountNumber must be 14 digits");
         this.value = value;
+    }
+
+    public static InternalAccountNumber of() {
+        return new InternalAccountNumber(AccountNumberGenerator.generateInternal());
     }
 
     public static InternalAccountNumber of(String value) {
