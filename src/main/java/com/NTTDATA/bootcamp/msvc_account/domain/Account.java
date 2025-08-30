@@ -25,8 +25,9 @@ public abstract class Account {
     protected final Balance balance;
     protected final Audit audit;
     protected final Set<AccountHolder> holders;
+    protected final TransactionLimit transactionLimit;
 
-    protected Account(String id, String customerId, String customerType, String documentType, String documentNumber, String accountNumber, String externalAccountNumber, AccountType accountType, AccountStatus status, Balance balance, Audit audit, Set<AccountHolder> holders) {
+    protected Account(String id, String customerId, String customerType, String documentType, String documentNumber, String accountNumber, String externalAccountNumber, AccountType accountType, AccountStatus status, Balance balance, Audit audit, Set<AccountHolder> holders, TransactionLimit transactionLimit) {
         this.id = AccountId.of(id);
         this.customerId = customerId;
         this.customerType = customerType;
@@ -37,6 +38,7 @@ public abstract class Account {
         this.balance = balance;
         this.audit = audit;
         this.holders = holders;
+        this.transactionLimit = transactionLimit;
 
         this.holders.add(AccountHolder.ofPrimaryHolder(documentType, documentNumber));
     }
@@ -70,6 +72,10 @@ public abstract class Account {
 
     public String getDocumentNumber() {
         return this.getPrimaryHolder().getDocumentNumber();
+    }
+
+    public BigDecimal getAmount() {
+        return this.balance.getAmount();
     }
 
     public String getAccountNumber() {

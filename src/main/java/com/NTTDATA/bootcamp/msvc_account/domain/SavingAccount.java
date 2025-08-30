@@ -17,7 +17,6 @@ import java.util.UUID;
 
 @Getter
 public class SavingAccount extends Account {
-    private final MonthlyMovementLimit monthlyMovementLimit;
 
     private SavingAccount(String id, String customerId, String customerType, String documentType, String documentNumber, String accountNumber, String externalAccountNumber, AccountType accountType, AccountStatus status, Balance balance, Audit audit, Set<AccountHolder> holders, MonthlyMovementLimit monthlyMovementLimit) {
         super(id, customerId, customerType, documentType, documentNumber, accountNumber, externalAccountNumber, accountType, status, balance, audit, holders);

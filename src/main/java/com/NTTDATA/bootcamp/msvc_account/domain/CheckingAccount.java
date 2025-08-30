@@ -4,19 +4,13 @@ import com.NTTDATA.bootcamp.msvc_account.domain.enums.AccountStatus;
 import com.NTTDATA.bootcamp.msvc_account.domain.enums.AccountType;
 import com.NTTDATA.bootcamp.msvc_account.domain.enums.OperationType;
 import com.NTTDATA.bootcamp.msvc_account.domain.util.AccountNumberGenerator;
-import com.NTTDATA.bootcamp.msvc_account.domain.vo.AccountHolder;
-import com.NTTDATA.bootcamp.msvc_account.domain.vo.Audit;
-import com.NTTDATA.bootcamp.msvc_account.domain.vo.AuthorizedSigner;
-import com.NTTDATA.bootcamp.msvc_account.domain.vo.Balance;
+import com.NTTDATA.bootcamp.msvc_account.domain.vo.*;
 import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Getter
@@ -25,8 +19,8 @@ public final class CheckingAccount extends Account {
     private final LocalDate nextFeeDate;
     private final Set<AuthorizedSigner> signers;
 
-    private CheckingAccount(String id, String customerId, String customerType, String documentType, String documentNumber, String accountNumber, String externalAccountNumber, AccountType accountType, AccountStatus status, Balance balance, Audit audit, Set<AccountHolder> holders, BigDecimal maintenanceFee, LocalDate nextFeeDate, Set<AuthorizedSigner> signers) {
-        super(id, customerId, customerType, documentType, documentNumber, accountNumber, externalAccountNumber, accountType, status, balance, audit, holders);
+    private CheckingAccount(String id, String customerId, String customerType, String documentType, String documentNumber, String accountNumber, String externalAccountNumber, AccountType accountType, AccountStatus status, Balance balance, Audit audit, Set<AccountHolder> holders, BigDecimal maintenanceFee, LocalDate nextFeeDate, Set<AuthorizedSigner> signers, TransactionLimit transactionLimit) {
+        super(id, customerId, customerType, documentType, documentNumber, accountNumber, externalAccountNumber, accountType, status, balance, audit, holders, transactionLimit);
         this.maintenanceFee = maintenanceFee;
         this.nextFeeDate = nextFeeDate;
         this.signers = signers;
@@ -37,6 +31,10 @@ public final class CheckingAccount extends Account {
 
         String internalAccountNumber = AccountNumberGenerator.generateInternal();
         String externalAccountNumber = AccountNumberGenerator.generateExternal(internalAccountNumber);
+
+        //LOGICA PARA CALCULAR
+
+        TransactionLimit transactionLimit = TransactionLimit.of(Map.of(OperationType.DEPOSIT, 2, OperationType.WITHDRAWAL, 2));
 
         return new CheckingAccount(UUID.randomUUID().toString(), customerId, customerType,
                 documentType, documentNumber, internalAccountNumber, externalAccountNumber,
