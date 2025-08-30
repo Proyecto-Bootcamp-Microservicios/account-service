@@ -8,6 +8,6 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 public class AuthorizedSignerCollection {
-    private String documentNumber;
     private String documentType;
+    private String documentNumber;
 }

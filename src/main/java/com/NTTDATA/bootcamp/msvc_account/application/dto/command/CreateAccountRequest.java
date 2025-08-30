@@ -3,6 +3,14 @@ package com.NTTDATA.bootcamp.msvc_account.application.dto.command;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+import java.math.BigDecimal;
+
+/*to json example: {
+    "customerId": "1",
+    "customerType": "1",
+    "documentType": "1",
+    "documentNumber": "1"
+}*/
 @Getter
 @AllArgsConstructor
 public final class CreateAccountRequest {
@@ -10,5 +18,5 @@ public final class CreateAccountRequest {
     private final String customerType;
     private final String documentType;
     private final String documentNumber;
-    private final String accountType;
+    private final BigDecimal amount;
 }

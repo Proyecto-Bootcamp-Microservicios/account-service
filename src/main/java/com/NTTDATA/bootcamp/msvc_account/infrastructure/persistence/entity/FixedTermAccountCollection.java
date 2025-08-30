@@ -3,6 +3,7 @@ package com.NTTDATA.bootcamp.msvc_account.infrastructure.persistence.entity;
 import com.NTTDATA.bootcamp.msvc_account.infrastructure.persistence.entity.embedded.AccountHolderCollection;
 import com.NTTDATA.bootcamp.msvc_account.infrastructure.persistence.entity.embedded.AuthorizedSignerCollection;
 import com.NTTDATA.bootcamp.msvc_account.infrastructure.persistence.entity.embedded.BalanceCollection;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.TypeAlias;
@@ -14,22 +15,26 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Document(collection = "accounts")
-@TypeAlias(value = "CHECKING")
 @Getter
 @Setter
-public class CheckingAccountCollection extends AccountCollection {
-    private BigDecimal maintenanceFee;
-    private LocalDate nextFeeDate;
-    private List<AuthorizedSignerCollection> authorizedSigners;
+@TypeAlias("FIXED_TERM")
+public class FixedTermAccountCollection extends AccountCollection {
 
-    public CheckingAccountCollection(String id, String customerId, String customerType,
+    private LocalDate maturityDate;
+    private LocalDate operationDate;
+    private BigDecimal interestRate;
+    private boolean hasPerformedMonthlyOperation;
+
+    public FixedTermAccountCollection(String id, String customerId, String customerType,
                                      String accountType, String accountNumber, String externalAccountNumber,
                                      String status, List<AccountHolderCollection> holders,
                                      BalanceCollection balance, LocalDateTime createdAt, LocalDateTime updatedAt,
-                                     BigDecimal maintenanceFee, LocalDate nextFeeDate, List<AuthorizedSignerCollection> authorizedSigners) {
+                                     LocalDate maturityDate, LocalDate operationDate, BigDecimal interestRate, boolean hasPerformedMonthlyOperation) {
         super(id, customerId, customerType, accountType, accountNumber, externalAccountNumber, status, balance, holders, createdAt, updatedAt);
-        this.maintenanceFee = maintenanceFee;
-        this.nextFeeDate = nextFeeDate;
-        this.authorizedSigners = authorizedSigners;
+        this.maturityDate = maturityDate;
+        this.operationDate = operationDate;
+        this.interestRate = interestRate;
+        this.hasPerformedMonthlyOperation = hasPerformedMonthlyOperation;
     }
+
 }

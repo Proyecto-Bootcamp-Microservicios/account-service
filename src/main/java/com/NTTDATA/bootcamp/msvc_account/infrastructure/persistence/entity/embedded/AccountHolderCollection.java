@@ -10,8 +10,8 @@ import java.math.BigDecimal;
 @Setter
 @AllArgsConstructor
 public class AccountHolderCollection {
-    private String documentNumber;
     private String documentType;
+    private String documentNumber;
     private BigDecimal participationPercentage;
     private boolean isPrimary;
 }

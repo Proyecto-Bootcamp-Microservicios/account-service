@@ -1,6 +1,5 @@
 package com.NTTDATA.bootcamp.msvc_account.infrastructure.persistence.entity;
 
-import com.NTTDATA.bootcamp.msvc_account.domain.enums.AccountType;
 import com.NTTDATA.bootcamp.msvc_account.infrastructure.persistence.entity.embedded.AccountHolderCollection;
 import com.NTTDATA.bootcamp.msvc_account.infrastructure.persistence.entity.embedded.BalanceCollection;
 import lombok.AllArgsConstructor;
@@ -17,13 +16,12 @@ import java.util.List;
 @Getter
 @Setter
 @AllArgsConstructor
-public class AccountCollection {
+public abstract class AccountCollection {
 
     @Id
     private String id;
-    private String customerType;
     private String customerId;
-
+    private String customerType;
     private String accountType;
     @Indexed
     private String accountNumber;
@@ -31,8 +29,8 @@ public class AccountCollection {
     private String externalAccountNumber;
     private String status;
 
-    private List<AccountHolderCollection> holders;
     private BalanceCollection balance;
+    private List<AccountHolderCollection> holders;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

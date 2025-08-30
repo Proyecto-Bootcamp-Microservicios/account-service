@@ -4,14 +4,13 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Getter
 @Setter
 @AllArgsConstructor
-public class BalanceCollection {
-    private BigDecimal amount;
-    private String currencyCode;
-    private LocalDateTime timestamp;
+public class MonthlyMovementLimitCollection {
+    private int limit;
+    private LocalDate monthStartDate;
+    private int currentMovements;
 }

@@ -6,7 +6,6 @@ import reactor.core.publisher.Mono;
 public interface IGenericRepositoryPort<D, ID> {
     Mono<D> save(D domain);
     Mono<D> findById(ID id);
-    Mono<D> update(D domain);
-    Mono<D> delete(D domain);
+    Mono<Void> delete(ID id);
     Flux<D> findAll();
 }

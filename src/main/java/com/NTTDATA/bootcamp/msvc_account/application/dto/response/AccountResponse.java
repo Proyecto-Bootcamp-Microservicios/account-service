@@ -17,10 +17,8 @@ public final class AccountResponse {
     private final String externalAccountNumber;
     private final AccountType accountType;
     private final AccountStatus status;
-    private final BigDecimal balance;
+    private final BigDecimal amount;
     private final String currency;
-    private final List<AccountHolderResponse> holders;
-    private final List<AuthorizedSignerResponse> signers;
     private final LocalDateTime createdAt;
     private final LocalDateTime updatedAt;
 }

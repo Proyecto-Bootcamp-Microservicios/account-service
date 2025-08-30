@@ -7,6 +7,7 @@ import com.NTTDATA.bootcamp.msvc_account.domain.vo.*;
 import lombok.Getter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -17,9 +18,9 @@ public abstract class Account {
     protected final AccountId id;
     protected final String customerId;
     protected final String customerType;
+    protected final AccountType accountType;
     protected final InternalAccountNumber accountNumber;
     protected final ExternalAccountNumber externalAccountNumber;
-    protected final AccountType accountType;
     protected final AccountStatus status;
     protected final Balance balance;
     protected final Audit audit;
@@ -77,6 +78,12 @@ public abstract class Account {
 
     public String getExternalAccountNumber() {
         return this.externalAccountNumber.getValue();
+    }
+    public LocalDateTime getCreatedAt() {
+        return this.audit.getCreatedAt();
+    }
+    public LocalDateTime getUpdatedAt() {
+        return this.audit.getUpdatedAt();
     }
 
     /*METODOS DE VALIDACIÓN*/

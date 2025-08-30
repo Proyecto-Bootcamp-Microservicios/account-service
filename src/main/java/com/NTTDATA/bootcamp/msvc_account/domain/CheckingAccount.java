@@ -41,7 +41,22 @@ public final class CheckingAccount extends Account {
         return new CheckingAccount(UUID.randomUUID().toString(), customerId, customerType,
                 documentType, documentNumber, internalAccountNumber, externalAccountNumber,
                 AccountType.CHECKING, AccountStatus.ACTIVE, Balance.zero("PEN"), Audit.create(), new HashSet<>(),
-                BigDecimal.valueOf(1), LocalDate.now().withDayOfMonth(1), new HashSet<>());
+                BigDecimal.valueOf(0), LocalDate.now().withDayOfMonth(1), new HashSet<>());
+    }
+
+    public static CheckingAccount of(String customerId, String customerType, String documentType, String documentNumber, BigDecimal amount) {
+
+        String internalAccountNumber = AccountNumberGenerator.generateInternal();
+        String externalAccountNumber = AccountNumberGenerator.generateExternal(internalAccountNumber);
+
+        return new CheckingAccount(UUID.randomUUID().toString(), customerId, customerType,
+                documentType, documentNumber, internalAccountNumber, externalAccountNumber,
+                AccountType.CHECKING, AccountStatus.ACTIVE, Balance.of("PEN", amount), Audit.create(), new HashSet<>(),
+                BigDecimal.valueOf(0), LocalDate.now().withDayOfMonth(1), new HashSet<>());
+    }
+
+    public static CheckingAccount reconstruct(String id, String customerId, String customerType, String documentType, String documentNumber, String accountNumber, String externalAccountNumber, AccountType accountType, AccountStatus status, Balance balance, Audit audit, Set<AccountHolder> holders, BigDecimal maintenanceFee, LocalDate nextFeeDate, Set<AuthorizedSigner> signers) {
+        return new CheckingAccount(id, customerId, customerType, documentType, documentNumber, accountNumber, externalAccountNumber, accountType, status, balance, audit, holders, maintenanceFee, nextFeeDate, signers);
     }
 
     @Override

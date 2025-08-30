@@ -62,6 +62,11 @@ public class FixedTermAccount extends Account {
                 maturityDate, LocalDate.now().withDayOfMonth(15), BigDecimal.valueOf(0.05), false);
     }
 
+    public static FixedTermAccount reconstruct(String id, String customerId, String customerType,
+                                      String documentType, String documentNumber, String accountNumber, String externalAccountNumber, AccountType accountType, AccountStatus status, Balance balance, Audit audit, Set<AccountHolder> holders, LocalDate maturityDate, LocalDate operationDate, BigDecimal interestRate, boolean hasPerformedMonthlyOperation) {
+        return new FixedTermAccount(id, customerId, customerType, documentType, documentNumber, accountNumber, externalAccountNumber, accountType, status, balance, audit, holders, maturityDate, operationDate, interestRate, hasPerformedMonthlyOperation);
+    }
+
     @Override
     protected void validateBusinessRules() {
         validateFixedTermRules();
