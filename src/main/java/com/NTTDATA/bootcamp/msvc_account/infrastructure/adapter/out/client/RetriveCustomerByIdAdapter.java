@@ -4,6 +4,7 @@ import com.NTTDATA.bootcamp.msvc_account.application.dto.response.CustomerRespon
 import com.NTTDATA.bootcamp.msvc_account.application.port.out.IRetriveCustomerByIdPort;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -14,16 +15,14 @@ public class RetriveCustomerByIdAdapter implements IRetriveCustomerByIdPort {
 
     private final WebClient.Builder webClientBuilder;
 
-    @Value("${customer.service.url}")
-    private String customerServiceUrl;
-
     @Override
     public Mono<CustomerResponse> retriveCustomerById(String id) {
         return webClientBuilder
-                .baseUrl(customerServiceUrl)
+                .baseUrl("http://msvc-customer/customers")
                 .build()
                 .get()
                 .uri("/{id}", id)
+                .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToMono(CustomerResponse.class)
                 .switchIfEmpty(Mono.empty());

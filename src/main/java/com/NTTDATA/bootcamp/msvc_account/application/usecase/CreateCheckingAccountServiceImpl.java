@@ -1,31 +1,45 @@
 package com.NTTDATA.bootcamp.msvc_account.application.usecase;
 
-import com.NTTDATA.bootcamp.msvc_account.application.dto.command.CreateAccountRequest;
+import com.NTTDATA.bootcamp.msvc_account.application.dto.command.CreateAccountCommand;
 import com.NTTDATA.bootcamp.msvc_account.application.dto.response.AccountResponse;
 import com.NTTDATA.bootcamp.msvc_account.application.port.in.ICreateCheckingAccountUseCase;
 import com.NTTDATA.bootcamp.msvc_account.application.port.out.IRetriveCustomerByIdPort;
 import com.NTTDATA.bootcamp.msvc_account.domain.CheckingAccount;
+import com.NTTDATA.bootcamp.msvc_account.domain.port.out.IAccountRepositoryPort;
 import com.NTTDATA.bootcamp.msvc_account.domain.port.out.ICheckingAccountRepositoryPort;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @AllArgsConstructor
 public class CreateCheckingAccountServiceImpl implements ICreateCheckingAccountUseCase {
 
-    private final ICheckingAccountRepositoryPort checkingAccountRepositoryPort;
     private final IRetriveCustomerByIdPort retriveCustomerByIdPort;
+    private final IAccountRepositoryPort accountRepositoryPort;
 
     @Override
-    public Mono<AccountResponse> createCheckingAccountWithAmountZero(CreateAccountRequest request) {
+    public Mono<AccountResponse> createCheckingAccountWithAmountZero(CreateAccountCommand request) {
         return retriveCustomerByIdPort.retriveCustomerById(request.getCustomerId())
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Customer not found")))
+                .flatMap(customerResponse -> {
+                    if (customerResponse.getCustomerType().equals("PERSONAL")) {
+                        return accountRepositoryPort.countAccountsByCustomerIdAndAccountType(customerResponse.getId(), "CHECKING")
+                                .flatMap(count -> {
+                                    log.info("Count " + count);
+                                    if (count >= 1) return Mono.error(new IllegalArgumentException("Customer already has a checking account"));
+                                    return Mono.just(customerResponse);
+                                });
+                    }
+                    return Mono.just(customerResponse);
+                })
                 .flatMap(customerResponse -> {
                     CheckingAccount checkingAccount = CheckingAccount.of(
                             customerResponse.getId(),
                             customerResponse.getCustomerType(),
-                            request.getDocumentType(),
+                            customerResponse.getDocumentType(),
                             customerResponse.getDocumentNumber());
-                    return checkingAccountRepositoryPort.save(checkingAccount);
+                    return accountRepositoryPort.save(checkingAccount);
                 })
                 .map(account -> new AccountResponse(
                     account.getIdValue(),
@@ -41,17 +55,30 @@ public class CreateCheckingAccountServiceImpl implements ICreateCheckingAccountU
     }
 
     @Override
-    public Mono<AccountResponse> createCheckingAccountWithCustomAmount(CreateAccountRequest request) {
+    public Mono<AccountResponse> createCheckingAccountWithCustomAmount(CreateAccountCommand request) {
         return retriveCustomerByIdPort.retriveCustomerById(request.getCustomerId())
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Customer not found")))
+                .flatMap(customerResponse -> {
+                    if (customerResponse.getCustomerType().equals("PERSONAL")) {
+                        return accountRepositoryPort.countAccountsByCustomerIdAndAccountType(customerResponse.getId(), "CHECKING")
+                                .flatMap(count -> {
+                                    log.error("Count " + count);
+                                    if (count >= 1) {
+                                        return Mono.error(new IllegalArgumentException("Customer already has a checking account"));
+                                    }
+                                    return Mono.just(customerResponse);
+                                });
+                    }
+                    return Mono.just(customerResponse);
+                })
                 .flatMap(customerResponse -> {
                     CheckingAccount checkingAccount = CheckingAccount.of(
                             customerResponse.getId(),
                             customerResponse.getCustomerType(),
-                            request.getDocumentType(),
+                            customerResponse.getDocumentType(),
                             customerResponse.getDocumentNumber(),
                             request.getAmount());
-                    return checkingAccountRepositoryPort.save(checkingAccount);
+                    return accountRepositoryPort.save(checkingAccount);
                 })
                 .map(account -> new AccountResponse(
                         account.getIdValue(),

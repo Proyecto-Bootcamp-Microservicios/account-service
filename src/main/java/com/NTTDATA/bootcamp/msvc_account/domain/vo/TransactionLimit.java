@@ -4,10 +4,8 @@ import com.NTTDATA.bootcamp.msvc_account.domain.enums.OperationType;
 import lombok.Getter;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -23,10 +21,10 @@ public final class TransactionLimit {
     private final Map<OperationType, Integer> currentTransactions;
     private final LocalDate monthStartDate;
 
-    private static final BigDecimal MAX_COMMISSION = new BigDecimal("500.00");
-    private static final BigDecimal MIN_COMMISSION = new BigDecimal("2.00");
-    private static final int MAX_FREE_TRANSACTIONS = 10;
-    private static final int UNLIMITED = Integer.MAX_VALUE;
+    public static final BigDecimal MAX_COMMISSION = new BigDecimal("500.00");
+    public static final BigDecimal MIN_COMMISSION = new BigDecimal("1.00");
+    public static final int MAX_FREE_TRANSACTIONS = 10;
+    public static final int UNLIMITED = Integer.MAX_VALUE;
 
     private static final Map<OperationType, Integer> MAP_OPERATION_INT_ZERO;
     static {
@@ -71,14 +69,13 @@ public final class TransactionLimit {
 
         fixedCommissions.forEach((operationType, commission) -> {
             if(operationType.equals(OperationType.TRANSFER)) throw new IllegalArgumentException("The transfer cannot have a maximum of free transactions, they are free");
-            if(commission.compareTo(MIN_COMMISSION) < 0) throw new IllegalArgumentException("Commission per transaction cannot be negative");
+            if(commission.compareTo(BigDecimal.ZERO) < 0) throw new IllegalArgumentException("Commission per transaction cannot be negative");
             if(commission.compareTo(MAX_COMMISSION) > 0) throw new IllegalArgumentException("Commission per transaction cannot be greater than " + MAX_COMMISSION);
         });
 
         currentTransactions.forEach((operationType, current) -> {
             if(operationType.equals(OperationType.TRANSFER)) throw new IllegalArgumentException("The transfer cannot have a maximum of free transactions, they are free");
             if(current < 0) throw new IllegalArgumentException("Current transactions cannot be negative");
-            if(current > maxFreeTransactions.get(operationType)) throw new IllegalArgumentException("Current transactions cannot be greater than max free transactions");
         });
         this.maxFreeTransactions = new EnumMap<>(maxFreeTransactions);
         this.fixedCommissions = new EnumMap<>(fixedCommissions);
@@ -91,8 +88,16 @@ public final class TransactionLimit {
      * Default method factory
      * */
     public static TransactionLimit of(){
-        Map<OperationType, Integer> maxFreeTransactions = Map.of(OperationType.DEPOSIT, 4, OperationType.WITHDRAWAL, 4);
-        Map<OperationType, BigDecimal> percentageCommissions = Map.of(OperationType.DEPOSIT, new BigDecimal("2.00"), OperationType.WITHDRAWAL, new BigDecimal("2.00"));
+        Map<OperationType, Integer> maxFreeTransactions = Map.of(OperationType.DEPOSIT, 2, OperationType.WITHDRAWAL, 2);
+        Map<OperationType, BigDecimal> percentageCommissions = Map.of(OperationType.DEPOSIT, new BigDecimal("1.00"), OperationType.WITHDRAWAL, new BigDecimal("1.00"));
+        return new TransactionLimit(maxFreeTransactions, MAP_OPERATION_BIGDECIMAL_ZERO, percentageCommissions, MAP_OPERATION_INT_ZERO, LocalDate.now().withDayOfMonth(1));
+    }
+
+    /**
+     * Limit for Fixed Term Account*/
+    public static TransactionLimit ofFixedTermAccount(){
+        Map<OperationType, Integer> maxFreeTransactions = Map.of(OperationType.DEPOSIT, 1, OperationType.WITHDRAWAL, 1);
+        Map<OperationType, BigDecimal> percentageCommissions = Map.of(OperationType.DEPOSIT, new BigDecimal("1.00"), OperationType.WITHDRAWAL, new BigDecimal("1.00"));
         return new TransactionLimit(maxFreeTransactions, MAP_OPERATION_BIGDECIMAL_ZERO, percentageCommissions, MAP_OPERATION_INT_ZERO, LocalDate.now().withDayOfMonth(1));
     }
 
@@ -100,60 +105,24 @@ public final class TransactionLimit {
         return new TransactionLimit(maxFreeTransactions, fixedCommissions, percentageCommissions, currentTransactions, monthStartDate);
     }
 
-    public boolean isFreeTransaction(OperationType operationType) {
-        int currentCount = currentTransactions.getOrDefault(operationType, 0);
-        int maxFree = maxFreeTransactions.getOrDefault(operationType, 0);
-        return currentCount < maxFree;
-    }
-
-    public boolean isUnlimited(OperationType operationType) {
-        return maxFreeTransactions.getOrDefault(operationType, 0) == UNLIMITED;
-    }
-
-    public BigDecimal getCommissionForTransaction(OperationType operationType, BigDecimal amount) {
-        return isFreeTransaction(operationType) ? BigDecimal.ZERO :
-                (this.getFixedCommissionPerTransaction(operationType)
-                        .add(this.getPercentageCommissionPerTransaction(operationType))
-                        .multiply(amount)).divide(BigDecimal.valueOf(100), RoundingMode.HALF_UP)
-                        .min(MAX_COMMISSION);
-    }
-
-    public TransactionLimit incrementCurrentTransaction(OperationType operationType) {
-        Map<OperationType, Integer> newCounts = new HashMap<>(currentTransactions);
-        int currentCount = newCounts.getOrDefault(operationType, 0);
-        newCounts.put(operationType, currentCount + 1);
-
-        return new TransactionLimit(maxFreeTransactions, fixedCommissions, percentageCommissions, newCounts, monthStartDate);
-    }
-
     public TransactionLimit resetForNewMonth() {
         if (isNewMonth()) return new TransactionLimit(maxFreeTransactions, fixedCommissions, percentageCommissions, MAP_OPERATION_INT_ZERO, currentMonthStart());
         return this;
     }
 
-    public int remainingFreeMovements(OperationType operationType) {
-        int maxFree = this.getMaxFreeTransactions(operationType);
-        int currentCount = this.getCurrentTransactions(operationType);
-        return Math.max(0, maxFree - currentCount);
-    }
-
-    private boolean isNewMonth() {
-        return !monthStartDate.equals(currentMonthStart());
-    }
-
-    public int getMaxFreeTransactions(OperationType operationType) {
+    public int getFreeTransactionsPerType(OperationType operationType) {
         return maxFreeTransactions.getOrDefault(operationType, 0);
     }
 
-    public int getCurrentTransactions(OperationType operationType) {
+    public int getCurrentTransactionsPerType(OperationType operationType) {
         return currentTransactions.getOrDefault(operationType, 0);
     }
 
-    public BigDecimal getFixedCommissionPerTransaction(OperationType operationType) {
+    public BigDecimal getFixedCommissionPerType(OperationType operationType) {
         return fixedCommissions.getOrDefault(operationType, BigDecimal.ZERO);
     }
 
-    public BigDecimal getPercentageCommissionPerTransaction(OperationType operationType) {
+    public BigDecimal getPercentageCommissionPerType(OperationType operationType) {
         return percentageCommissions.getOrDefault(operationType, BigDecimal.ZERO);
     }
 
@@ -161,4 +130,7 @@ public final class TransactionLimit {
         return LocalDate.now().withDayOfMonth(1);
     }
 
+    private boolean isNewMonth() {
+        return !monthStartDate.equals(currentMonthStart());
+    }
 }

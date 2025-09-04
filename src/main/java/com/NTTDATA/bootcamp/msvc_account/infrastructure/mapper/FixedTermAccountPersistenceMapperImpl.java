@@ -6,9 +6,11 @@ import com.NTTDATA.bootcamp.msvc_account.domain.enums.AccountType;
 import com.NTTDATA.bootcamp.msvc_account.domain.vo.AccountHolder;
 import com.NTTDATA.bootcamp.msvc_account.domain.vo.Audit;
 import com.NTTDATA.bootcamp.msvc_account.domain.vo.Balance;
+import com.NTTDATA.bootcamp.msvc_account.domain.vo.TransactionLimit;
 import com.NTTDATA.bootcamp.msvc_account.infrastructure.persistence.entity.FixedTermAccountCollection;
 import com.NTTDATA.bootcamp.msvc_account.infrastructure.persistence.entity.embedded.AccountHolderCollection;
 import com.NTTDATA.bootcamp.msvc_account.infrastructure.persistence.entity.embedded.BalanceCollection;
+import com.NTTDATA.bootcamp.msvc_account.infrastructure.persistence.entity.embedded.TransactionLimitCollection;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -31,7 +33,10 @@ public class FixedTermAccountPersistenceMapperImpl implements IFixedTermAccountP
                         accountHolder.isPrimaryHolder())
                 ).collect(Collectors.toList());
 
-        return new FixedTermAccountCollection(fixedTermAccount.getIdValue(), fixedTermAccount.getCustomerId(), fixedTermAccount.getCustomerType(), fixedTermAccount.getAccountType().name(), fixedTermAccount.getAccountNumber(), fixedTermAccount.getExternalAccountNumber(), fixedTermAccount.getStatus().name(), accountHolderCollections, balanceCollection, fixedTermAccount.getCreatedAt(), fixedTermAccount.getUpdatedAt(), fixedTermAccount.getMaturityDate(), fixedTermAccount.getOperationDate(), fixedTermAccount.getInterestRate(), fixedTermAccount.isHasPerformedMonthlyOperation());
+        TransactionLimit transactionLimit = fixedTermAccount.getTransactionLimit();
+        TransactionLimitCollection transactionLimitCollection = new TransactionLimitCollection(transactionLimit.getMaxFreeTransactions(), transactionLimit.getFixedCommissions(), transactionLimit.getPercentageCommissions(), transactionLimit.getCurrentTransactions(), transactionLimit.getMonthStartDate());
+
+        return new FixedTermAccountCollection(fixedTermAccount.getIdValue(), fixedTermAccount.getCustomerId(), fixedTermAccount.getCustomerType(), fixedTermAccount.getAccountType().name(), fixedTermAccount.getAccountNumber(), fixedTermAccount.getExternalAccountNumber(), fixedTermAccount.getStatus().name(), accountHolderCollections, balanceCollection, fixedTermAccount.getCreatedAt(), fixedTermAccount.getUpdatedAt(), fixedTermAccount.getMaturityDate(), fixedTermAccount.getDayOfOperation(), fixedTermAccount.getInterestRate(), fixedTermAccount.isHasPerformedMonthlyOperation(), transactionLimitCollection);
     }
 
     @Override
@@ -53,6 +58,9 @@ public class FixedTermAccountPersistenceMapperImpl implements IFixedTermAccountP
                 })
                 .collect(Collectors.toSet());
 
+        TransactionLimitCollection transactionLimitCollection = fixedTermAccountCollection.getTransactionLimit();
+        TransactionLimit transactionLimit = TransactionLimit.reconstruct(transactionLimitCollection.getMaxFreeTransactions(), transactionLimitCollection.getFixedCommissions(), transactionLimitCollection.getPercentageCommissions(), transactionLimitCollection.getCurrentTransactions(), transactionLimitCollection.getMonthStartDate());
+
         return FixedTermAccount.reconstruct(
                 fixedTermAccountCollection.getId(),
                 fixedTermAccountCollection.getCustomerId(),
@@ -66,8 +74,9 @@ public class FixedTermAccountPersistenceMapperImpl implements IFixedTermAccountP
                 balance, Audit.reconstruct(fixedTermAccountCollection.getCreatedAt(), fixedTermAccountCollection.getUpdatedAt()),
                 accountHolders,
                 fixedTermAccountCollection.getMaturityDate(),
-                fixedTermAccountCollection.getOperationDate(),
+                fixedTermAccountCollection.getDayOfOperation(),
                 fixedTermAccountCollection.getInterestRate(),
-                fixedTermAccountCollection.isHasPerformedMonthlyOperation());
+                fixedTermAccountCollection.isHasPerformedMonthlyOperation(),
+                transactionLimit);
     }
 }

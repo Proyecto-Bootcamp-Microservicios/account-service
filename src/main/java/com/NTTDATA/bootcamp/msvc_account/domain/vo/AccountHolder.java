@@ -1,6 +1,8 @@
 package com.NTTDATA.bootcamp.msvc_account.domain.vo;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -8,6 +10,8 @@ import java.util.List;
 import static com.NTTDATA.bootcamp.msvc_account.domain.util.DomainUtils.*;
 
 @Getter
+@ToString
+@EqualsAndHashCode(of = {"documentNumber", "documentType"})
 public final class AccountHolder {
     private final String documentNumber;
     private final String documentType;

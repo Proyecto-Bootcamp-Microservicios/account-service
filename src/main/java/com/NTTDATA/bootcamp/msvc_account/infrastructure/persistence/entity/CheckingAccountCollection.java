@@ -3,6 +3,7 @@ package com.NTTDATA.bootcamp.msvc_account.infrastructure.persistence.entity;
 import com.NTTDATA.bootcamp.msvc_account.infrastructure.persistence.entity.embedded.AccountHolderCollection;
 import com.NTTDATA.bootcamp.msvc_account.infrastructure.persistence.entity.embedded.AuthorizedSignerCollection;
 import com.NTTDATA.bootcamp.msvc_account.infrastructure.persistence.entity.embedded.BalanceCollection;
+import com.NTTDATA.bootcamp.msvc_account.infrastructure.persistence.entity.embedded.TransactionLimitCollection;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.TypeAlias;
@@ -26,8 +27,8 @@ public class CheckingAccountCollection extends AccountCollection {
                                      String accountType, String accountNumber, String externalAccountNumber,
                                      String status, List<AccountHolderCollection> holders,
                                      BalanceCollection balance, LocalDateTime createdAt, LocalDateTime updatedAt,
-                                     BigDecimal maintenanceFee, LocalDate nextFeeDate, List<AuthorizedSignerCollection> authorizedSigners) {
-        super(id, customerId, customerType, accountType, accountNumber, externalAccountNumber, status, balance, holders, createdAt, updatedAt);
+                                     BigDecimal maintenanceFee, LocalDate nextFeeDate, List<AuthorizedSignerCollection> authorizedSigners, TransactionLimitCollection transactionLimit) {
+        super(id, customerId, customerType, accountType, accountNumber, externalAccountNumber, status, balance, holders, createdAt, updatedAt, transactionLimit);
         this.maintenanceFee = maintenanceFee;
         this.nextFeeDate = nextFeeDate;
         this.authorizedSigners = authorizedSigners;

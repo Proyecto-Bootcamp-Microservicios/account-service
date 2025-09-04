@@ -2,6 +2,7 @@ package com.NTTDATA.bootcamp.msvc_account.infrastructure.persistence.entity;
 
 import com.NTTDATA.bootcamp.msvc_account.infrastructure.persistence.entity.embedded.AccountHolderCollection;
 import com.NTTDATA.bootcamp.msvc_account.infrastructure.persistence.entity.embedded.BalanceCollection;
+import com.NTTDATA.bootcamp.msvc_account.infrastructure.persistence.entity.embedded.TransactionLimitCollection;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -34,5 +35,7 @@ public abstract class AccountCollection {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    private TransactionLimitCollection transactionLimit;
 
 }

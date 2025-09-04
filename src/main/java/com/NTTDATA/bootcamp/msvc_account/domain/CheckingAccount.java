@@ -19,7 +19,14 @@ public final class CheckingAccount extends Account {
     private final LocalDate nextFeeDate;
     private final Set<AuthorizedSigner> signers;
 
-    private CheckingAccount(String id, String customerId, String customerType, String documentType, String documentNumber, String accountNumber, String externalAccountNumber, AccountType accountType, AccountStatus status, Balance balance, Audit audit, Set<AccountHolder> holders, BigDecimal maintenanceFee, LocalDate nextFeeDate, Set<AuthorizedSigner> signers, TransactionLimit transactionLimit) {
+    private CheckingAccount(String id, String customerId, String customerType,
+                            String documentType, String documentNumber,
+                            String accountNumber, String externalAccountNumber,
+                            AccountType accountType, AccountStatus status,
+                            Balance balance, Audit audit,
+                            Set<AccountHolder> holders, BigDecimal maintenanceFee,
+                            LocalDate nextFeeDate, Set<AuthorizedSigner> signers,
+                            TransactionLimit transactionLimit) {
         super(id, customerId, customerType, documentType, documentNumber, accountNumber, externalAccountNumber, accountType, status, balance, audit, holders, transactionLimit);
         this.maintenanceFee = maintenanceFee;
         this.nextFeeDate = nextFeeDate;
@@ -32,17 +39,15 @@ public final class CheckingAccount extends Account {
         String internalAccountNumber = AccountNumberGenerator.generateInternal();
         String externalAccountNumber = AccountNumberGenerator.generateExternal(internalAccountNumber);
 
-        //LOGICA PARA CALCULAR
-
-        TransactionLimit transactionLimit = TransactionLimit.of(Map.of(OperationType.DEPOSIT, 2, OperationType.WITHDRAWAL, 2));
-
         return new CheckingAccount(UUID.randomUUID().toString(), customerId, customerType,
                 documentType, documentNumber, internalAccountNumber, externalAccountNumber,
                 AccountType.CHECKING, AccountStatus.ACTIVE, Balance.zero("PEN"), Audit.create(), new HashSet<>(),
-                BigDecimal.valueOf(0), LocalDate.now().withDayOfMonth(1), new HashSet<>());
+                BigDecimal.valueOf(0), LocalDate.now().plusMonths(1).withDayOfMonth(1), new HashSet<>(), TransactionLimit.of());
     }
 
-    public static CheckingAccount of(String customerId, String customerType, String documentType, String documentNumber, BigDecimal amount) {
+    public static CheckingAccount of(String customerId, String customerType,
+                                     String documentType, String documentNumber,
+                                     BigDecimal amount) {
 
         String internalAccountNumber = AccountNumberGenerator.generateInternal();
         String externalAccountNumber = AccountNumberGenerator.generateExternal(internalAccountNumber);
@@ -50,94 +55,60 @@ public final class CheckingAccount extends Account {
         return new CheckingAccount(UUID.randomUUID().toString(), customerId, customerType,
                 documentType, documentNumber, internalAccountNumber, externalAccountNumber,
                 AccountType.CHECKING, AccountStatus.ACTIVE, Balance.of("PEN", amount), Audit.create(), new HashSet<>(),
-                BigDecimal.valueOf(0), LocalDate.now().withDayOfMonth(1), new HashSet<>());
+                BigDecimal.valueOf(0), LocalDate.now().withDayOfMonth(1), new HashSet<>(), TransactionLimit.of());
     }
 
-    public static CheckingAccount reconstruct(String id, String customerId, String customerType, String documentType, String documentNumber, String accountNumber, String externalAccountNumber, AccountType accountType, AccountStatus status, Balance balance, Audit audit, Set<AccountHolder> holders, BigDecimal maintenanceFee, LocalDate nextFeeDate, Set<AuthorizedSigner> signers) {
-        return new CheckingAccount(id, customerId, customerType, documentType, documentNumber, accountNumber, externalAccountNumber, accountType, status, balance, audit, holders, maintenanceFee, nextFeeDate, signers);
+    public static CheckingAccount of(String customerId, String customerType,
+                                     String documentType, String documentNumber,
+                                     BigDecimal amount, Set<AccountHolder> holders) {
+
+        String internalAccountNumber = AccountNumberGenerator.generateInternal();
+        String externalAccountNumber = AccountNumberGenerator.generateExternal(internalAccountNumber);
+
+        return new CheckingAccount(UUID.randomUUID().toString(), customerId, customerType,
+                documentType, documentNumber, internalAccountNumber, externalAccountNumber,
+                AccountType.CHECKING, AccountStatus.ACTIVE, Balance.of("PEN", amount), Audit.create(), holders,
+                BigDecimal.valueOf(0), LocalDate.now().withDayOfMonth(1), new HashSet<>(), TransactionLimit.of());
+    }
+
+    public static CheckingAccount reconstruct(String id, String customerId, String customerType,
+                                              String documentType, String documentNumber,
+                                              String accountNumber, String externalAccountNumber,
+                                              AccountType accountType, AccountStatus status,
+                                              Balance balance, Audit audit, Set<AccountHolder> holders,
+                                              BigDecimal maintenanceFee, LocalDate nextFeeDate,
+                                              Set<AuthorizedSigner> signers, TransactionLimit transactionLimit) {
+        return new CheckingAccount(id, customerId, customerType, documentType, documentNumber, accountNumber, externalAccountNumber, accountType, status, balance, audit, holders, maintenanceFee, nextFeeDate, signers, transactionLimit);
     }
 
     @Override
     protected void validateBusinessRules() {
         if (this.isPersonalAccount() && this.holders.size() > 1) throw new IllegalArgumentException("Personal checking accounts cannot have multiple holders");
+        if(this.isPersonalAccount() && !this.signers.isEmpty()) throw new IllegalArgumentException("Personal checking accounts cannot have authorized signers");
         if (this.maintenanceFee.compareTo(BigDecimal.ZERO) < 0) throw new IllegalArgumentException("Maintenance fee cannot be negative");
         if (this.nextFeeDate.isBefore(LocalDate.now().withDayOfMonth(1))) throw new IllegalArgumentException("Next fee date cannot be in the past");
     }
 
     @Override
-    protected boolean canPerformTransactionSpecific(OperationType operation, BigDecimal amount) {
-        return true;
+    public Account changeStatus(AccountStatus status) {
+        if(this.getStatus().equals(status)) throw new IllegalArgumentException("Account status cannot be the same");
+        return new CheckingAccount(this.getIdValue(), this.customerId, this.customerType, this.getDocumentType(), this.getDocumentNumber(), this.getAccountNumber(), this.getExternalAccountNumber(), this.accountType, status, this.balance, this.audit.update(), this.holders, this.maintenanceFee, this.nextFeeDate, this.signers, this.transactionLimit);
     }
 
     @Override
-    protected Account updateBalance(BigDecimal amount, OperationType operation) {
-        if(!canPerformTransaction(operation, amount)) throw new IllegalArgumentException("Transaction is not allowed");
-        if(operation.equals(OperationType.DEPOSIT)){
-            Balance newBalance = this.balance.update(amount);
-            return new CheckingAccount(this.getIdValue(), this.customerId, this.customerType, this.getDocumentType(), this.getDocumentNumber(), this.getAccountNumber(), this.getExternalAccountNumber(), this.accountType, this.status, newBalance, this.audit.update(), this.holders, this.maintenanceFee, this.nextFeeDate, this.signers);
-        }
-        if(operation.equals(OperationType.WITHDRAWAL) || operation.equals(OperationType.TRANSFER)){
-            Balance newBalance = this.balance.update(amount.negate());
-            return new CheckingAccount(this.getIdValue(), this.customerId, this.customerType, this.getDocumentType(), this.getDocumentNumber(), this.getAccountNumber(), this.getExternalAccountNumber(), this.accountType, this.status, newBalance, this.audit.update(), this.holders, this.maintenanceFee, this.nextFeeDate, this.signers);
-        }
-        throw new IllegalArgumentException("Transaction is not allowed");
+    protected void canPerformTransactionSpecific(OperationType operation, BigDecimal amount) {
+        //This method is not used for checking accounts
     }
 
     @Override
-    protected CheckingAccount recordTransaction() {
-        return new CheckingAccount(
-                this.id.getValue(),
-                this.customerId,
-                this.customerType,
-                this.getPrimaryHolder().getDocumentType(),
-                this.getPrimaryHolder().getDocumentNumber(),
-                this.accountNumber.getValue(),
-                this.externalAccountNumber.getValue(),
-                this.accountType,
-                this.status,
-                this.balance,
-                this.audit.update(),
-                this.holders,
-                this.maintenanceFee,
-                this.nextFeeDate,
-                this.signers
-        );
-    }
-
-
-    @Override
-    protected CheckingAccount suspend() {
-        if(isSuspended()) throw new IllegalArgumentException("Account is already suspended");
-        return new CheckingAccount(this.getIdValue(), this.customerId, this.customerType, this.getDocumentType(), this.getDocumentNumber(), this.getAccountNumber(), this.getExternalAccountNumber(), this.accountType, AccountStatus.SUSPENDED, this.balance, this.audit.update(), this.holders, this.maintenanceFee, this.nextFeeDate, this.signers);
-    }
-
-    @Override
-    protected CheckingAccount activate() {
-        if(isActive()) throw new IllegalArgumentException("Account is already active");
-        return new CheckingAccount(this.getIdValue(), this.customerId, this.customerType, this.getDocumentType(), this.getDocumentNumber(), this.getAccountNumber(), this.getExternalAccountNumber(), this.accountType, AccountStatus.ACTIVE, this.balance, this.audit.update(), this.holders, this.maintenanceFee, this.nextFeeDate, this.signers);
-    }
-
-    @Override
-    protected CheckingAccount close() {
-        if(isClosed()) throw new IllegalArgumentException("Account is already closed");
-        return new CheckingAccount(this.getIdValue(), this.customerId, this.customerType, this.getDocumentType(), this.getDocumentNumber(), this.getAccountNumber(), this.getExternalAccountNumber(), this.accountType, AccountStatus.CLOSED, this.balance, this.audit.update(), this.holders, this.maintenanceFee, this.nextFeeDate, this.signers);
-    }
-
-    @Override
-    protected CheckingAccount block() {
-        if(isBlocked()) throw new IllegalArgumentException("Account is already blocked");
-        return new CheckingAccount(this.getIdValue(), this.customerId, this.customerType, this.getDocumentType(), this.getDocumentNumber(), this.getAccountNumber(), this.getExternalAccountNumber(), this.accountType, AccountStatus.BLOCKED, this.balance, this.audit.update(), this.holders, this.maintenanceFee, this.nextFeeDate, this.signers);
-    }
-
-    @Override
-    protected Account addHolder(AccountHolder newHolder) {
+    public Account addHolder(AccountHolder newHolder) {
         if (newHolder.isPrimaryHolder()) throw new IllegalArgumentException("Cannot add primary holder, it's already set");
         validateTotalParticipation(newHolder.getParticipationPercentage());
         this.holders.add(newHolder);
         Set<AccountHolder> redistributedHolders = redistributePercentages();
         return new CheckingAccount(this.getIdValue(), this.customerId, this.customerType, this.getDocumentType(),
                 this.getDocumentNumber(), this.getAccountNumber(), this.getExternalAccountNumber(), this.accountType,
-                this.status, this.balance, this.audit.update(), redistributedHolders, this.maintenanceFee, this.nextFeeDate, this.signers);
+                this.status, this.balance, this.audit.update(), redistributedHolders, this.maintenanceFee, this.nextFeeDate, this.signers, this.transactionLimit);
     }
 
     private void validateTotalParticipation(BigDecimal newPercentage) {
@@ -191,7 +162,7 @@ public final class CheckingAccount extends Account {
 
         for (AccountHolder holder : this.holders) {
             BigDecimal share = holder.getParticipationPercentage()
-                    .divide(totalRemaining, 10, RoundingMode.HALF_UP); // proporción
+                    .divide(totalRemaining, 10, RoundingMode.HALF_UP);
             BigDecimal extra = removedPercentage.multiply(share);
             BigDecimal newPercentage = holder.getParticipationPercentage().add(extra);
             if(holder.isPrimaryHolder()){
@@ -203,7 +174,22 @@ public final class CheckingAccount extends Account {
             }
         }
         this.holders.clear();
-        return new CheckingAccount(this.getIdValue(), this.customerId, this.customerType, this.getDocumentType(), this.getDocumentNumber(), this.getAccountNumber(), this.getExternalAccountNumber(), this.accountType, this.status, this.balance, this.audit.update(), updatedHolders, this.maintenanceFee, this.nextFeeDate, this.signers);
+        return new CheckingAccount(this.getIdValue(), this.customerId, this.customerType, this.getDocumentType(), this.getDocumentNumber(), this.getAccountNumber(), this.getExternalAccountNumber(), this.accountType, this.status, this.balance, this.audit.update(), updatedHolders, this.maintenanceFee, this.nextFeeDate, this.signers, this.transactionLimit);
+    }
+
+    @Override
+    public Account withNewBalance(Balance newBalance) {
+        return new CheckingAccount(this.getIdValue(), this.customerId, this.customerType, this.getDocumentType(), this.getDocumentNumber(), this.getAccountNumber(), this.getExternalAccountNumber(), this.accountType, this.status, newBalance, this.audit.update(), this.holders, this.maintenanceFee, this.nextFeeDate, this.signers, this.transactionLimit);
+    }
+
+    @Override
+    public Account withNewTransactionLimit(TransactionLimit newTransactionLimit) {
+        return new CheckingAccount(this.getIdValue(), this.customerId, this.customerType, this.getDocumentType(), this.getDocumentNumber(), this.getAccountNumber(), this.getExternalAccountNumber(), this.accountType, this.status, this.balance, this.audit.update(), this.holders, this.maintenanceFee, this.nextFeeDate, this.signers, newTransactionLimit);
+    }
+
+    @Override
+    public Account updateOperationDateIfNeeded() {
+        return this;
     }
 
     public boolean isMaintenanceFeeDue() {
@@ -214,34 +200,24 @@ public final class CheckingAccount extends Account {
         return this.balance.getAmount().compareTo(this.maintenanceFee) >= 0;
     }
 
-    public Set<AuthorizedSigner> getSigners() {
-        return signers;
-    }
-
     public boolean hasSigners() {
         return !signers.isEmpty();
     }
 
-    // Métodos para gestionar firmantes (solo para cuentas empresariales)
     public CheckingAccount addSigner(AuthorizedSigner signer) {
-        if (!this.isEnterpriseAccount()) {
-            throw new IllegalStateException("Only enterprise accounts can have signers");
-        }
+        if (!this.isEnterpriseAccount()) throw new IllegalStateException("Only enterprise accounts can have signers");
         Set<AuthorizedSigner> newSigners = new HashSet<>(this.signers);
         newSigners.add(signer);
-        return new CheckingAccount(this.getIdValue(), this.customerId, this.customerType, this.getDocumentType(), this.getDocumentNumber(), this.getAccountNumber(), this.getExternalAccountNumber(), this.accountType, this.status, this.balance, this.audit.update(), this.holders, this.maintenanceFee, this.nextFeeDate, newSigners);
+        return new CheckingAccount(this.getIdValue(), this.customerId, this.customerType, this.getDocumentType(), this.getDocumentNumber(), this.getAccountNumber(), this.getExternalAccountNumber(), this.accountType, this.status, this.balance, this.audit.update(), this.holders, this.maintenanceFee, this.nextFeeDate, newSigners, this.transactionLimit);
     }
 
     public CheckingAccount removeSigner(String documentNumber) {
-        if (!this.isEnterpriseAccount()) {
-            throw new IllegalStateException("Only enterprise accounts can have signers");
-        }
+        if (!this.isEnterpriseAccount()) throw new IllegalStateException("Only enterprise accounts can have signers");
         Set<AuthorizedSigner> newSigners = new HashSet<>(this.signers);
         newSigners.removeIf(signer -> signer.getDocumentNumber().equals(documentNumber));
-        return new CheckingAccount(this.getIdValue(), this.customerId, this.customerType, this.getDocumentType(), this.getDocumentNumber(), this.getAccountNumber(), this.getExternalAccountNumber(), this.accountType, this.status, this.balance, this.audit.update(), this.holders, this.maintenanceFee, this.nextFeeDate, newSigners);
+        return new CheckingAccount(this.getIdValue(), this.customerId, this.customerType, this.getDocumentType(), this.getDocumentNumber(), this.getAccountNumber(), this.getExternalAccountNumber(), this.accountType, this.status, this.balance, this.audit.update(), this.holders, this.maintenanceFee, this.nextFeeDate, newSigners, this.transactionLimit);
     }
 
-    // PERMITE múltiples titulares (para cuentas empresariales)
     public boolean isMultiHolderAccount() {
         return this.holders.size() > 1;
     }

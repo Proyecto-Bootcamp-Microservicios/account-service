@@ -7,10 +7,9 @@ import com.NTTDATA.bootcamp.msvc_account.domain.vo.*;
 import lombok.Getter;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Getter
@@ -27,7 +26,11 @@ public abstract class Account {
     protected final Set<AccountHolder> holders;
     protected final TransactionLimit transactionLimit;
 
-    protected Account(String id, String customerId, String customerType, String documentType, String documentNumber, String accountNumber, String externalAccountNumber, AccountType accountType, AccountStatus status, Balance balance, Audit audit, Set<AccountHolder> holders, TransactionLimit transactionLimit) {
+    protected Account(String id, String customerId, String customerType,
+                      String documentType, String documentNumber,
+                      String accountNumber, String externalAccountNumber,
+                      AccountType accountType, AccountStatus status, Balance balance, Audit audit,
+                      Set<AccountHolder> holders, TransactionLimit transactionLimit) {
         this.id = AccountId.of(id);
         this.customerId = customerId;
         this.customerType = customerType;
@@ -37,31 +40,24 @@ public abstract class Account {
         this.status = status;
         this.balance = balance;
         this.audit = audit;
-        this.holders = holders;
+        this.holders = new HashSet<>(holders);
         this.transactionLimit = transactionLimit;
-
-        this.holders.add(AccountHolder.ofPrimaryHolder(documentType, documentNumber));
+        if (this.holders.isEmpty()) {
+            this.holders.add(AccountHolder.ofPrimaryHolder(documentType, documentNumber));
+        }
     }
 
-    public final boolean canPerformTransaction(OperationType operation, BigDecimal amount) {
-        if(!this.isActive()) return false;
-        if(operation == OperationType.WITHDRAWAL && !balance.hasSufficientFunds(amount)) return false;
-        return this.canPerformTransactionSpecific(operation, amount);
-    }
-
-    /*METODOS ABSTRACTOS*/
+    protected abstract void canPerformTransactionSpecific(OperationType operation, BigDecimal amount);
     protected abstract void validateBusinessRules();
-    protected abstract boolean canPerformTransactionSpecific(OperationType operation, BigDecimal amount);
-    protected abstract Account updateBalance(BigDecimal amount, OperationType operation);
-    protected abstract Account recordTransaction();
-    protected abstract Account suspend();
-    protected abstract Account activate();
-    protected abstract Account close();
-    protected abstract Account block();
-    protected abstract Account addHolder(AccountHolder newHolder);
-    protected abstract Account removeHolder(AccountHolder accountHolder);
+    public abstract Account addHolder(AccountHolder newHolder);
+    public abstract Account removeHolder(AccountHolder accountHolder);
+    public abstract Account changeStatus(AccountStatus status);
+    public abstract Account withNewBalance(Balance newBalance);
+    public abstract Account withNewTransactionLimit(TransactionLimit newTransactionLimit);
+    public abstract Account updateOperationDateIfNeeded();
 
     /*METODOS GET DE VO*/
+    //Id VO
     public String getIdValue() {
         return this.id.getValue();
     }
@@ -74,10 +70,36 @@ public abstract class Account {
         return this.getPrimaryHolder().getDocumentNumber();
     }
 
+    //Balance VO
     public BigDecimal getAmount() {
         return this.balance.getAmount();
     }
 
+    public Currency getCurrency() {
+        return this.balance.getCurrency();
+    }
+
+    public String getCurrencyCode() {
+        return getCurrency().getCurrencyCode();
+    }
+
+    public String getDisplayAmount() {
+        return getCurrency().getSymbol() + " " + getAmount().toString();
+    }
+
+    public boolean hasSameCurrency(Account other) {
+        return this.getCurrencyCode().equals(other.getCurrencyCode());
+    }
+
+    public boolean isZero() {
+        return getAmount().compareTo(BigDecimal.ZERO) == 0;
+    }
+
+    public boolean isPositive() {
+        return getAmount().compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    //AccountNumber VO
     public String getAccountNumber() {
         return this.accountNumber.getValue();
     }
@@ -85,6 +107,8 @@ public abstract class Account {
     public String getExternalAccountNumber() {
         return this.externalAccountNumber.getValue();
     }
+
+    //Audit VO
     public LocalDateTime getCreatedAt() {
         return this.audit.getCreatedAt();
     }
@@ -117,19 +141,80 @@ public abstract class Account {
         return this.status == AccountStatus.SUSPENDED;
     }
 
-    public boolean canReceiveTransactions() {
-        return this.isActive() && !this.isBlocked();
-    }
-
-    public boolean hasSufficientFunds() {
-        return this.balance.isPositive();
-    }
-
     public AccountHolder getPrimaryHolder() {
         return this.holders.stream()
                 .filter(AccountHolder::isPrimaryHolder)
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Primary holder not found"));
+    }
+
+    public void validateTransaction(OperationType operation, BigDecimal amount) {
+        if(!this.isActive()) throw new IllegalArgumentException("Account is " + this.status.name().toLowerCase() + " and cannot perform transactions");
+        if((operation == OperationType.WITHDRAWAL || operation == OperationType.TRANSFER) && !this.hasSufficientFunds(amount)) throw new IllegalArgumentException("Insufficient funds");
+        this.canPerformTransactionSpecific(operation, amount);
+    }
+
+    public final Balance calculateNewBalance(OperationType operation, BigDecimal amount) {
+        if (operation == OperationType.DEPOSIT) {
+            return this.balance.update(amount);
+        } else if (operation == OperationType.WITHDRAWAL || operation == OperationType.TRANSFER) {
+            return this.balance.update(amount.negate());
+        }
+
+        throw new IllegalArgumentException("Operation not supported: " + operation);
+    }
+
+    public boolean hasSufficientFunds(BigDecimal amount) {
+        return this.getAmount().compareTo(amount) >= 0;
+    }
+
+    public BigDecimal calculateAmountWithCommission(OperationType operationType, BigDecimal amount) {
+        if(!this.isFreeTransaction(operationType)){
+            BigDecimal commission = this.getCommissionPerType(operationType, amount);
+            amount = amount.add(commission);
+        }
+        return amount;
+    }
+
+    public BigDecimal getCommissionPerType(OperationType operationType, BigDecimal amount) {
+        TransactionLimit transactionLimit = getTransactionLimit();
+        return isFreeTransaction(operationType) || isUnlimited(operationType) ? BigDecimal.ZERO :
+                (transactionLimit.getFixedCommissionPerType(operationType)
+                        .add(transactionLimit.getPercentageCommissionPerType(operationType))
+                        .multiply(amount)
+                )
+                        .divide(BigDecimal.valueOf(100), RoundingMode.HALF_UP)
+                        .min(TransactionLimit.MAX_COMMISSION)
+                        .max(TransactionLimit.MIN_COMMISSION);
+    }
+
+    public boolean isFreeTransaction(OperationType operationType) {
+        return this.remainingFreeMovements(operationType) > 0;
+    }
+
+    public int remainingFreeMovements(OperationType operationType) {
+        TransactionLimit transactionLimit = getTransactionLimit();
+        int maxFree = transactionLimit.getFreeTransactionsPerType(operationType);
+        int currentCount = transactionLimit.getCurrentTransactionsPerType(operationType);
+        return Math.max(0, maxFree - currentCount);
+    }
+
+    public boolean isUnlimited(OperationType operationType) {
+        TransactionLimit transactionLimit = getTransactionLimit();
+        return transactionLimit.getMaxFreeTransactions().getOrDefault(operationType, 0) == TransactionLimit.UNLIMITED;
+    }
+
+    public TransactionLimit incrementCurrentTransaction(OperationType operationType) {
+        TransactionLimit transactionLimit = getTransactionLimit();
+        Map<OperationType, Integer> newCounts = new HashMap<>(transactionLimit.getCurrentTransactions());
+        int currentCount = newCounts.getOrDefault(operationType, 0);
+        newCounts.put(operationType, currentCount + 1);
+
+        return TransactionLimit.reconstruct(transactionLimit.getMaxFreeTransactions(),
+                transactionLimit.getFixedCommissions(),
+                transactionLimit.getPercentageCommissions(),
+                newCounts,
+                transactionLimit.getMonthStartDate());
     }
 
     /*METODOS DE MODIFICACIÓN (FALTA REFACTORIZAR PARA RETORNAR UN NUEVO OBJETO)*/

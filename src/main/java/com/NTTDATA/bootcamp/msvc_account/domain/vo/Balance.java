@@ -49,17 +49,7 @@ public final class Balance {
         return new Balance(this.currency.getCurrencyCode(), newAmount, LocalDateTime.now());
     }
 
-    public boolean hasSufficientFunds(BigDecimal amount) {
-        return this.amount.compareTo(amount) >= 0;
-    }
 
-    public boolean isZero() {
-        return this.amount.compareTo(BigDecimal.ZERO) == 0;
-    }
-
-    public boolean isPositive() {
-        return this.amount.compareTo(BigDecimal.ZERO) > 0;
-    }
 
     public boolean isGreaterThan(Balance other) {
         if (!this.currency.equals(other.currency)) {
@@ -75,17 +65,7 @@ public final class Balance {
         return amount.compareTo(other.amount) < 0;
     }
 
-    public boolean hasSameCurrency(Balance other) {
-        return this.currency.equals(other.currency);
-    }
 
-    public String getCurrencyCode() {
-        return currency.getCurrencyCode();
-    }
-
-    public String getDisplayAmount() {
-        return currency.getSymbol() + " " + amount.toString();
-    }
 
     public boolean isRecent() {
         return LocalDateTime.now().minusHours(1).isBefore(timestamp);

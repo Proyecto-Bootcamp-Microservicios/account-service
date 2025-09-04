@@ -7,6 +7,7 @@ import com.NTTDATA.bootcamp.msvc_account.domain.util.AccountNumberGenerator;
 import com.NTTDATA.bootcamp.msvc_account.domain.vo.AccountHolder;
 import com.NTTDATA.bootcamp.msvc_account.domain.vo.Audit;
 import com.NTTDATA.bootcamp.msvc_account.domain.vo.Balance;
+import com.NTTDATA.bootcamp.msvc_account.domain.vo.TransactionLimit;
 import lombok.Getter;
 
 import java.math.BigDecimal;
@@ -18,20 +19,23 @@ import java.util.UUID;
 @Getter
 public class FixedTermAccount extends Account {
     private final LocalDate maturityDate;
-    private final LocalDate operationDate;
+    private final int dayOfOperation;
     private final BigDecimal interestRate;
     private final boolean hasPerformedMonthlyOperation;
 
-    private FixedTermAccount(String id, String customerId, String customerType, String documentType, String documentNumber, String accountNumber, String externalAccountNumber, AccountType accountType, AccountStatus status, Balance balance, Audit audit, Set<AccountHolder> holders, LocalDate maturityDate, LocalDate operationDate, BigDecimal interestRate, boolean hasPerformedMonthlyOperation) {
-        super(id, customerId, customerType, documentType, documentNumber, accountNumber, externalAccountNumber, accountType, status, balance, audit, holders);
-
-        if(isEnterpriseAccount()) throw new IllegalArgumentException("Enterprise accounts are not allowed");
+    private FixedTermAccount(String id, String customerId, String customerType,
+                             String documentType, String documentNumber,
+                             String accountNumber, String externalAccountNumber, AccountType accountType,
+                             AccountStatus status, Balance balance, Audit audit, Set<AccountHolder> holders,
+                             LocalDate maturityDate, int dayOfOperation, BigDecimal interestRate,
+                             boolean hasPerformedMonthlyOperation, TransactionLimit transactionLimit) {
+        super(id, customerId, customerType, documentType, documentNumber, accountNumber, externalAccountNumber, accountType, status, balance, audit, holders, transactionLimit);
 
         this.maturityDate = maturityDate;
-        this.operationDate = operationDate;
+        this.dayOfOperation = dayOfOperation;
         this.interestRate = interestRate;
         this.hasPerformedMonthlyOperation = hasPerformedMonthlyOperation;
-        validateFixedTermRules();
+        validateBusinessRules();
     }
 
     public static FixedTermAccount ofSemiAnnually(String customerId, String customerType,
@@ -45,7 +49,7 @@ public class FixedTermAccount extends Account {
                 documentType, documentNumber, internalAccountNumber, externalAccountNumber,
                 AccountType.FIXED_TERM, AccountStatus.ACTIVE,
                 Balance.zero("PEN"), Audit.create(), new HashSet<>(),
-                maturityDate, LocalDate.now().withDayOfMonth(15), BigDecimal.valueOf(0.02), false);
+                maturityDate, 15, BigDecimal.valueOf(0.02), false, TransactionLimit.ofFixedTermAccount());
     }
 
     public static FixedTermAccount ofAnnually(String customerId, String customerType,
@@ -59,106 +63,30 @@ public class FixedTermAccount extends Account {
                 documentType, documentNumber, internalAccountNumber, externalAccountNumber,
                 AccountType.FIXED_TERM, AccountStatus.ACTIVE,
                 Balance.zero("PEN"), Audit.create(), new HashSet<>(),
-                maturityDate, LocalDate.now().withDayOfMonth(15), BigDecimal.valueOf(0.05), false);
+                maturityDate, 15, BigDecimal.valueOf(0.05), false, TransactionLimit.ofFixedTermAccount());
     }
 
     public static FixedTermAccount reconstruct(String id, String customerId, String customerType,
-                                      String documentType, String documentNumber, String accountNumber, String externalAccountNumber, AccountType accountType, AccountStatus status, Balance balance, Audit audit, Set<AccountHolder> holders, LocalDate maturityDate, LocalDate operationDate, BigDecimal interestRate, boolean hasPerformedMonthlyOperation) {
-        return new FixedTermAccount(id, customerId, customerType, documentType, documentNumber, accountNumber, externalAccountNumber, accountType, status, balance, audit, holders, maturityDate, operationDate, interestRate, hasPerformedMonthlyOperation);
+                                      String documentType, String documentNumber, String accountNumber, String externalAccountNumber, AccountType accountType, AccountStatus status, Balance balance, Audit audit, Set<AccountHolder> holders, LocalDate maturityDate, int dayOfOperation, BigDecimal interestRate, boolean hasPerformedMonthlyOperation, TransactionLimit transactionLimit) {
+        return new FixedTermAccount(id, customerId, customerType, documentType, documentNumber, accountNumber, externalAccountNumber, accountType, status, balance, audit, holders, maturityDate, dayOfOperation, interestRate, hasPerformedMonthlyOperation, transactionLimit);
     }
 
     @Override
     protected void validateBusinessRules() {
-        validateFixedTermRules();
-    }
-
-    @Override
-    protected boolean canPerformTransactionSpecific(OperationType operation, BigDecimal amount) {
-        return isOperationDate() && !hasPerformedMonthlyOperation;
-    }
-
-    @Override
-    protected Account updateBalance(BigDecimal amount, OperationType operation) {
-        if (!this.isOperationDate()) throw new IllegalStateException("Can only update balance on operation date");
-        if (this.hasPerformedMonthlyOperation) throw new IllegalStateException("Monthly operation already performed");
-        if (!this.isActive()) throw new IllegalStateException("Account must be active to update balance");
-        BigDecimal newBalance = this.balance.getAmount().add(amount);
-        if (newBalance.compareTo(BigDecimal.valueOf(1000)) < 0) throw new IllegalStateException("Balance cannot go below minimum 1000");
-        return new FixedTermAccount(
-                this.id.getValue(),
-                this.customerId,
-                this.customerType,
-                this.getPrimaryHolder().getDocumentType(),
-                this.getPrimaryHolder().getDocumentNumber(),
-                this.accountNumber.getValue(),
-                this.externalAccountNumber.getValue(),
-                this.accountType,
-                this.status,
-                Balance.of(this.balance.getCurrencyCode(), newBalance),
-                this.audit.update(),
-                this.holders,
-                this.maturityDate,
-                this.operationDate,
-                this.interestRate,
-                true
-        );
-    }
-
-    public FixedTermAccount recordTransaction() {
-        return new FixedTermAccount(
-                this.id.getValue(),
-                this.customerId,
-                this.customerType,
-                this.getPrimaryHolder().getDocumentType(),
-                this.getPrimaryHolder().getDocumentNumber(),
-                this.accountNumber.getValue(),
-                this.externalAccountNumber.getValue(),
-                this.accountType,
-                this.status,
-                this.balance,
-                this.audit.update(),
-                this.holders,
-                this.maturityDate,
-                this.operationDate,
-                this.interestRate,
-                true
-        );
-    }
-
-    @Override
-    protected FixedTermAccount suspend() {
-        if(isSuspended()) throw new IllegalArgumentException("Account is already suspended");
-        return new FixedTermAccount(this.id.getValue(), this.customerId, this.customerType, this.getDocumentType(), this.getDocumentNumber(), this.getAccountNumber(), this.getExternalAccountNumber(), this.accountType, AccountStatus.SUSPENDED, this.balance, this.audit.update(), this.holders, this.maturityDate, this.operationDate, this.interestRate, this.hasPerformedMonthlyOperation);
-    }
-
-    @Override
-    protected FixedTermAccount activate() {
-        if(isActive()) throw new IllegalArgumentException("Account is already active");
-        return new FixedTermAccount(this.id.getValue(), this.customerId, this.customerType, this.getDocumentType(), this.getDocumentNumber(), this.getAccountNumber(), this.getExternalAccountNumber(), this.accountType, AccountStatus.ACTIVE, this.balance, this.audit.update(), this.holders, this.maturityDate, this.operationDate, this.interestRate, this.hasPerformedMonthlyOperation);
-    }
-
-    @Override
-    protected FixedTermAccount close() {
-        if(isClosed()) throw new IllegalArgumentException("Account is already closed");
-        return new FixedTermAccount(this.id.getValue(), this.customerId, this.customerType, this.getDocumentType(), this.getDocumentNumber(), this.getAccountNumber(), this.getExternalAccountNumber(), this.accountType, AccountStatus.CLOSED, this.balance, this.audit.update(), this.holders, this.maturityDate, this.operationDate, this.interestRate, this.hasPerformedMonthlyOperation);
-    }
-
-    @Override
-    protected FixedTermAccount block() {
-        if(isBlocked()) throw new IllegalArgumentException("Account is already blocked");
-        return new FixedTermAccount(this.id.getValue(), this.customerId, this.customerType, this.getDocumentType(), this.getDocumentNumber(), this.getAccountNumber(), this.getExternalAccountNumber(), this.accountType, AccountStatus.BLOCKED, this.balance, this.audit.update(), this.holders, this.maturityDate, this.operationDate, this.interestRate, this.hasPerformedMonthlyOperation);
-    }
-
-    private void validateFixedTermRules() {
-        if (!this.isPersonalAccount()) throw new IllegalArgumentException("Fixed term accounts can only be created for personal customers");
-        if (maturityDate.isBefore(LocalDate.now())) throw new IllegalArgumentException("Maturity date must be in the future");
+        if(isEnterpriseAccount()) throw new IllegalArgumentException("Enterprise accounts are not allowed");
         if (this.balance.getAmount().compareTo(BigDecimal.valueOf(1000)) < 0) throw new IllegalArgumentException("Fixed term account requires minimum initial balance of 1000");
         if (interestRate.compareTo(BigDecimal.ZERO) <= 0) throw new IllegalArgumentException("Interest rate must be positive");
+        if(LocalDate.now().getDayOfMonth() < dayOfOperation || LocalDate.now().getDayOfMonth() > dayOfOperation) throw new IllegalArgumentException("Fixed term accounts can only be created on the operation date");
+    }
+
+    @Override
+    protected void canPerformTransactionSpecific(OperationType operation, BigDecimal amount) {
+        if(LocalDate.now().getDayOfMonth() != this.dayOfOperation) throw new IllegalArgumentException("Fixed term accounts cannot perform operations on operation date");
     }
 
     public boolean isOperationDate() {
         LocalDate today = LocalDate.now();
-        return today.getDayOfMonth() == operationDate.getDayOfMonth();
+        return today.getDayOfMonth() == this.dayOfOperation;
     }
 
     public boolean canPerformMonthlyOperation() {
@@ -177,6 +105,59 @@ public class FixedTermAccount extends Account {
     @Override
     public FixedTermAccount removeHolder(AccountHolder accountHolder) {
         throw new UnsupportedOperationException("Fixed term accounts cannot have multiple holders");
+    }
+
+    @Override
+    public Account changeStatus(AccountStatus status) {
+        return null;
+    }
+
+    @Override
+    public Account withNewBalance(Balance newBalance) {
+        return null;
+    }
+
+    @Override
+    public Account withNewTransactionLimit(TransactionLimit newTransactionLimit) {
+        return null;
+    }
+
+    public Account updateOperationDateIfNeeded() {
+        LocalDate currentDate = LocalDate.now();
+        int currentMonthOperationDate = calculateOperationDateForMonth(currentDate).getDayOfMonth();
+
+        if (this.dayOfOperation < currentMonthOperationDate) {
+            return new FixedTermAccount(
+                    this.getIdValue(),
+                    this.customerId,
+                    this.customerType,
+                    this.getDocumentType(),
+                    this.getDocumentNumber(),
+                    this.getAccountNumber(),
+                    this.getExternalAccountNumber(),
+                    this.accountType,
+                    this.status,
+                    this.balance,
+                    this.audit.update(),
+                    this.holders,
+                    this.maturityDate,
+                    currentMonthOperationDate,
+                    this.interestRate,
+                    false,
+                    this.transactionLimit
+            );
+        }
+        return this;
+    }
+
+    private LocalDate calculateOperationDateForMonth(LocalDate date) {
+        int dayOfMonth = date.getDayOfMonth();
+        int midMonth = date.lengthOfMonth() / 2;
+
+        if (dayOfMonth <= midMonth) return date.withDayOfMonth(midMonth);
+
+        return date.withDayOfMonth(date.lengthOfMonth());
+
     }
 
 }

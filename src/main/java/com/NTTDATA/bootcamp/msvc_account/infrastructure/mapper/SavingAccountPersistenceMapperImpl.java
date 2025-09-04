@@ -3,14 +3,11 @@ package com.NTTDATA.bootcamp.msvc_account.infrastructure.mapper;
 import com.NTTDATA.bootcamp.msvc_account.domain.SavingAccount;
 import com.NTTDATA.bootcamp.msvc_account.domain.enums.AccountStatus;
 import com.NTTDATA.bootcamp.msvc_account.domain.enums.AccountType;
-import com.NTTDATA.bootcamp.msvc_account.domain.vo.AccountHolder;
-import com.NTTDATA.bootcamp.msvc_account.domain.vo.Audit;
-import com.NTTDATA.bootcamp.msvc_account.domain.vo.Balance;
-import com.NTTDATA.bootcamp.msvc_account.domain.vo.MonthlyMovementLimit;
+import com.NTTDATA.bootcamp.msvc_account.domain.vo.*;
 import com.NTTDATA.bootcamp.msvc_account.infrastructure.persistence.entity.SavingAccountCollection;
 import com.NTTDATA.bootcamp.msvc_account.infrastructure.persistence.entity.embedded.AccountHolderCollection;
 import com.NTTDATA.bootcamp.msvc_account.infrastructure.persistence.entity.embedded.BalanceCollection;
-import com.NTTDATA.bootcamp.msvc_account.infrastructure.persistence.entity.embedded.MonthlyMovementLimitCollection;
+import com.NTTDATA.bootcamp.msvc_account.infrastructure.persistence.entity.embedded.TransactionLimitCollection;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -31,9 +28,16 @@ public class SavingAccountPersistenceMapperImpl implements ISavingAccountPersist
                         accountHolder.getParticipationPercentage(),
                         accountHolder.isPrimaryHolder())
                 ).collect(Collectors.toList());
-        MonthlyMovementLimitCollection monthlyMovementLimitCollection = new MonthlyMovementLimitCollection(savingAccount.getMonthlyMovementLimit().getLimit(), savingAccount.getMonthlyMovementLimit().getMonthStartDate(), savingAccount.getMonthlyMovementLimit().getCurrentMovements());
 
-        return new SavingAccountCollection(savingAccount.getIdValue(), savingAccount.getCustomerId(), savingAccount.getCustomerType(), savingAccount.getAccountType().name(), savingAccount.getAccountNumber(), savingAccount.getExternalAccountNumber(), savingAccount.getStatus().name(), balanceCollection, accountHolderCollections, savingAccount.getCreatedAt(), savingAccount.getUpdatedAt(), monthlyMovementLimitCollection);
+        TransactionLimit transactionLimit = savingAccount.getTransactionLimit();
+        TransactionLimitCollection transactionLimitCollection = new TransactionLimitCollection(
+                transactionLimit.getMaxFreeTransactions(),
+                transactionLimit.getFixedCommissions(),
+                transactionLimit.getPercentageCommissions(),
+                transactionLimit.getCurrentTransactions(),
+                transactionLimit.getMonthStartDate());
+
+        return new SavingAccountCollection(savingAccount.getIdValue(), savingAccount.getCustomerId(), savingAccount.getCustomerType(), savingAccount.getAccountType().name(), savingAccount.getAccountNumber(), savingAccount.getExternalAccountNumber(), savingAccount.getStatus().name(), balanceCollection, accountHolderCollections, savingAccount.getCreatedAt(), savingAccount.getUpdatedAt(), transactionLimitCollection);
     }
 
     @Override
@@ -54,6 +58,8 @@ public class SavingAccountPersistenceMapperImpl implements ISavingAccountPersist
                     }
                 })
                 .collect(Collectors.toSet());
+        TransactionLimit transactionLimit = TransactionLimit.reconstruct(savingAccountCollection.getTransactionLimit().getMaxFreeTransactions(), savingAccountCollection.getTransactionLimit().getFixedCommissions(), savingAccountCollection.getTransactionLimit().getPercentageCommissions(), savingAccountCollection.getTransactionLimit().getCurrentTransactions(), savingAccountCollection.getTransactionLimit().getMonthStartDate());
+
         return SavingAccount.reconstruct(
                 savingAccountCollection.getId(),
                 savingAccountCollection.getCustomerId(),
@@ -65,6 +71,6 @@ public class SavingAccountPersistenceMapperImpl implements ISavingAccountPersist
                 AccountType.valueOf(savingAccountCollection.getAccountType()),
                 AccountStatus.valueOf(savingAccountCollection.getStatus()),
                 balance, Audit.reconstruct(savingAccountCollection.getCreatedAt(), savingAccountCollection.getUpdatedAt()),
-                accountHolders, MonthlyMovementLimit.reconstruct(savingAccountCollection.getMonthlyMovementLimit().getLimit(), savingAccountCollection.getMonthlyMovementLimit().getMonthStartDate(), savingAccountCollection.getMonthlyMovementLimit().getCurrentMovements()));
+                accountHolders, transactionLimit);
     }
 }

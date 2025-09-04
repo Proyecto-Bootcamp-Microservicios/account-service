@@ -1,3 +1,4 @@
+/*
 package com.NTTDATA.bootcamp.msvc_account.infrastructure.adapter.out;
 
 import com.NTTDATA.bootcamp.msvc_account.domain.SavingAccount;
@@ -15,3 +16,4 @@ public class SavingAccountRepositoryAdapter extends AbstractSpringRepositoryImpl
         super(repository, mapper);
     }
 }
+*/
