@@ -1,0 +1,8 @@
+package com.ntt.data.bootcamp.msvc.account.application.port.in;
+
+import com.ntt.data.bootcamp.msvc.account.application.dto.response.BalanceResponse;
+import reactor.core.publisher.Mono;
+
+public interface IRetriveAccountBalanceUseCase {
+  Mono<BalanceResponse> retriveAccountBalance(String accountId);
+}
