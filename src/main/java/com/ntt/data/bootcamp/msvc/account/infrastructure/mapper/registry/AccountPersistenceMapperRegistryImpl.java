@@ -40,6 +40,7 @@ public class AccountPersistenceMapperRegistryImpl implements IAccountPersistence
         acc -> savingAccountPersistenceMapper.toDomain((SavingAccountCollection) acc));
     registryMapToEntity.put(
         SavingAccount.class, acc -> savingAccountPersistenceMapper.toEntity((SavingAccount) acc));
+
     registryMapToDomain.put(
         FixedTermAccountCollection.class,
         acc -> fixedTermAccountPersistenceMapper.toDomain((FixedTermAccountCollection) acc));

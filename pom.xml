@@ -135,11 +135,11 @@
             <scope>provided</scope>
         </dependency>
 
-        <dependency>
+        <!--<dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-hateoas</artifactId>
             <version>1.8.0</version>
-        </dependency>
+        </dependency>-->
 
         <dependency>
             <groupId>com.puppycrawl.tools</groupId>

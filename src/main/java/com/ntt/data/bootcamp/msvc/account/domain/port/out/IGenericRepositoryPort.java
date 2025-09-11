@@ -8,7 +8,5 @@ public interface IGenericRepositoryPort<D, ID> {
 
   Mono<D> findById(ID id);
 
-  Mono<Void> delete(ID id);
-
   Flux<D> findAll();
 }

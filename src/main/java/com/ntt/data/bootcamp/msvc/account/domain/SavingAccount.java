@@ -2,6 +2,7 @@ package com.ntt.data.bootcamp.msvc.account.domain;
 
 import com.ntt.data.bootcamp.msvc.account.domain.enums.AccountStatus;
 import com.ntt.data.bootcamp.msvc.account.domain.enums.AccountType;
+import com.ntt.data.bootcamp.msvc.account.domain.enums.OperationDirection;
 import com.ntt.data.bootcamp.msvc.account.domain.enums.OperationType;
 import com.ntt.data.bootcamp.msvc.account.domain.util.AccountNumberGenerator;
 import java.math.BigDecimal;
@@ -135,7 +136,7 @@ public class SavingAccount extends Account {
   }
 
   @Override
-  protected void canPerformTransactionSpecific(OperationType operation, BigDecimal amount) {
+  protected void canPerformTransactionSpecific(OperationDirection direction, BigDecimal amount) {
     // This method is not used for checking accounts
   }
 

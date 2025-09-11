@@ -47,4 +47,9 @@ public class UseCaseConfig {
       IAccountRepositoryPort accountRepositoryPort) {
     return new RetriveAccountBalanceServiceImpl(accountRepositoryPort);
   }
+
+  @Bean
+  IRetrieveAccountUseCase retrieveAccountUseCase(IAccountRepositoryPort accountRepositoryPort) {
+    return new RetrieveAccountServiceImpl(accountRepositoryPort);
+  }
 }

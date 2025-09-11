@@ -26,17 +26,17 @@ public class ExecuteTransactionServiceImpl implements IExecuteTransactionUseCase
         .switchIfEmpty(Mono.error(new Exception("Account not found")))
         .flatMap(
             account -> {
-              account.validateTransaction(command.getOperationType(), command.getAmount());
 
               BigDecimal commission =
                   account.getCommissionPerType(command.getOperationType(), command.getAmount());
               BigDecimal amountWithCommission =
                   account.calculateAmountWithCommission(
                       command.getOperationType(), command.getAmount());
+              account.validateTransaction(command.getOperationDirection(), amountWithCommission);
               BigDecimal previousBalance = account.getBalance().getAmount();
 
               Balance balanceUpdated =
-                  account.calculateNewBalance(command.getOperationType(), amountWithCommission);
+                  account.calculateNewBalance(command.getOperationDirection(), amountWithCommission);
 
               Account accountUpdated =
                   account

@@ -7,10 +7,12 @@ import com.ntt.data.bootcamp.msvc.account.application.dto.response.BalanceRespon
 import com.ntt.data.bootcamp.msvc.account.application.dto.response.TransactionExecuteResponse;
 import com.ntt.data.bootcamp.msvc.account.application.port.in.*;
 import com.ntt.data.bootcamp.msvc.account.domain.enums.AccountStatus;
+import com.ntt.data.bootcamp.msvc.account.domain.enums.AccountType;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -24,6 +26,39 @@ public class AccountController {
   private final IExecuteTransactionUseCase executeTransactionUseCase;
   private final IChangeStatusUseCase changeStatusUseCase;
   private final IRetriveAccountBalanceUseCase retriveAccountBalanceUseCase;
+  private final IRetrieveAccountUseCase retrieveAccountUseCase;
+
+  @GetMapping
+  public Mono<ResponseEntity<Flux<AccountResponse>>> retrieveAllAccounts() {
+    return Mono.just(new ResponseEntity<>(retrieveAccountUseCase.findAll(), HttpStatus.OK));
+  }
+
+  @GetMapping("/type/{type}")
+  public Mono<ResponseEntity<Flux<AccountResponse>>> findAllByType(@PathVariable AccountType type) {
+    return Mono.just(ResponseEntity.ok(retrieveAccountUseCase.findAllByType(type)));
+  }
+
+  @GetMapping("/status/{status}")
+  public Mono<ResponseEntity<Flux<AccountResponse>>> findAllByStatus(@PathVariable AccountStatus status) {
+    return Mono.just(ResponseEntity.ok(retrieveAccountUseCase.findAllByStatus(status)));
+  }
+
+  @GetMapping("/customer/{customerId}")
+  public Mono<ResponseEntity<Flux<AccountResponse>>> findAllByCustomer(@PathVariable String customerId) {
+    return retrieveAccountUseCase.findAllByCustomer(customerId)
+        .hasElements()
+        .map(hasElements ->
+            hasElements
+                ? ResponseEntity.ok(retrieveAccountUseCase.findAllByCustomer(customerId))
+                : ResponseEntity.notFound().build()
+        );
+  }
+
+  @GetMapping("/type/{type}/status/{status}")
+  public Mono<ResponseEntity<Flux<AccountResponse>>> findByTypeAndStatus(
+      @PathVariable AccountType type, @PathVariable AccountStatus status) {
+    return Mono.just(ResponseEntity.ok(retrieveAccountUseCase.findAllByTypeAndStatus(type, status)));
+  }
 
   @GetMapping("/{id}/balance")
   public Mono<ResponseEntity<BalanceResponse>> retriveAccountBalance(@PathVariable String id) {
@@ -60,9 +95,9 @@ public class AccountController {
         .defaultIfEmpty(new ResponseEntity<>(HttpStatus.BAD_REQUEST));
   }
 
-  @PutMapping("/{id}")
+  @PutMapping("/{accountNumber}")
   public Mono<ResponseEntity<TransactionExecuteResponse>> executeTransaction(
-      @PathVariable String id, @RequestBody TransactionExecutionCommand request) {
+      @PathVariable(value = "accountNumber") String id, @RequestBody TransactionExecutionCommand request) {
     return executeTransactionUseCase
         .executeTransaction(id, request)
         .map(
@@ -79,4 +114,13 @@ public class AccountController {
         .map(accountResponse -> new ResponseEntity<>(accountResponse, HttpStatus.OK))
         .defaultIfEmpty(new ResponseEntity<>(HttpStatus.BAD_REQUEST));
   }
+
+  @DeleteMapping("/{id}")
+  public Mono<ResponseEntity<AccountResponse>> deleteAccount(@PathVariable String id) {
+    return changeStatusUseCase
+        .changeStatus(id, AccountStatus.CLOSED)
+        .map(accountResponse -> new ResponseEntity<>(accountResponse, HttpStatus.OK))
+        .defaultIfEmpty(new ResponseEntity<>(HttpStatus.BAD_REQUEST));
+  }
+
 }

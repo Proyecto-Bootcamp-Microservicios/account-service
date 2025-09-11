@@ -1,8 +1,6 @@
 package com.ntt.data.bootcamp.msvc.account.domain;
 
-import com.ntt.data.bootcamp.msvc.account.domain.enums.AccountStatus;
-import com.ntt.data.bootcamp.msvc.account.domain.enums.AccountType;
-import com.ntt.data.bootcamp.msvc.account.domain.enums.OperationType;
+import com.ntt.data.bootcamp.msvc.account.domain.enums.*;
 import com.ntt.data.bootcamp.msvc.account.domain.vo.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -56,7 +54,7 @@ public abstract class Account {
     }
   }
 
-  protected abstract void canPerformTransactionSpecific(OperationType operation, BigDecimal amount);
+  protected abstract void canPerformTransactionSpecific(OperationDirection direction, BigDecimal amount);
 
   protected abstract void validateBusinessRules();
 
@@ -165,24 +163,24 @@ public abstract class Account {
         .orElseThrow(() -> new IllegalArgumentException("Primary holder not found"));
   }
 
-  public void validateTransaction(OperationType operation, BigDecimal amount) {
+  public void validateTransaction(OperationDirection direction, BigDecimal amount) {
     if (!this.isActive())
       throw new IllegalArgumentException(
           "Account is " + this.status.name().toLowerCase() + " and cannot perform transactions");
-    if ((operation == OperationType.WITHDRAWAL || operation == OperationType.TRANSFER_INTERNAL || operation == OperationType.TRANSFER_EXTERNAL|| operation == OperationType.PAYMENT)
+    if (direction == OperationDirection.OUT
         && !this.hasSufficientFunds(amount))
       throw new IllegalArgumentException("Insufficient funds");
-    this.canPerformTransactionSpecific(operation, amount);
+    this.canPerformTransactionSpecific(direction, amount);
   }
 
-  public final Balance calculateNewBalance(OperationType operation, BigDecimal amount) {
-    if (operation == OperationType.DEPOSIT) {
+  public final Balance calculateNewBalance(OperationDirection direction, BigDecimal amount) {
+    if (direction == OperationDirection.IN) {
       return this.balance.update(amount);
-    } else if (operation == OperationType.WITHDRAWAL || operation == OperationType.TRANSFER_INTERNAL || operation == OperationType.TRANSFER_EXTERNAL || operation == OperationType.PAYMENT) {
+    } else if (direction == OperationDirection.OUT) {
       return this.balance.update(amount.negate());
     }
 
-    throw new IllegalArgumentException("Operation not supported: " + operation);
+    throw new IllegalArgumentException("Operation not supported: " + direction);
   }
 
   public boolean hasSufficientFunds(BigDecimal amount) {
@@ -194,11 +192,17 @@ public abstract class Account {
 
     BigDecimal commission = this.getCommissionPerType(operationType, amount);
 
-    if(operationType == OperationType.WITHDRAWAL
+    if (operationType == OperationType.WITHDRAWAL
         || operationType == OperationType.TRANSFER_INTERNAL
         || operationType == OperationType.TRANSFER_EXTERNAL
-        || operationType == OperationType.PAYMENT ) return amount.subtract(commission);
-    return amount.add(commission);
+        || operationType == OperationType.PAYMENT) {
+      return amount.add(commission);
+    }
+
+    BigDecimal net = amount.subtract(commission);
+    if (net.compareTo(BigDecimal.ZERO) <= 0)
+      throw new IllegalArgumentException("The commission cannot be greater than or equal to the amount");
+    return net;
   }
 
   public BigDecimal getCommissionPerType(OperationType operationType, BigDecimal amount) {

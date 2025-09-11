@@ -12,7 +12,7 @@ import reactor.core.publisher.Mono;
 @Component
 @AllArgsConstructor
 @Slf4j
-public class FixedTermAccountUpdater {
+public class FixedTermAccountUpdaterScheduler {
 
   private final IAccountRepositoryPort accountRepositoryPort;
 

@@ -2,6 +2,7 @@ package com.ntt.data.bootcamp.msvc.account.domain;
 
 import com.ntt.data.bootcamp.msvc.account.domain.enums.AccountStatus;
 import com.ntt.data.bootcamp.msvc.account.domain.enums.AccountType;
+import com.ntt.data.bootcamp.msvc.account.domain.enums.OperationDirection;
 import com.ntt.data.bootcamp.msvc.account.domain.enums.OperationType;
 import com.ntt.data.bootcamp.msvc.account.domain.util.AccountNumberGenerator;
 import com.ntt.data.bootcamp.msvc.account.domain.vo.AccountHolder;
@@ -172,7 +173,7 @@ public class FixedTermAccount extends Account {
   }
 
   @Override
-  protected void canPerformTransactionSpecific(OperationType operation, BigDecimal amount) {
+  protected void canPerformTransactionSpecific(OperationDirection direction, BigDecimal amount) {
     if (LocalDate.now().getDayOfMonth() != this.dayOfOperation)
       throw new IllegalArgumentException(
           "Fixed term accounts cannot perform operations on operation date");
