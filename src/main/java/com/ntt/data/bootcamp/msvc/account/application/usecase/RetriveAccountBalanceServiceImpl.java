@@ -6,6 +6,9 @@ import com.ntt.data.bootcamp.msvc.account.domain.port.out.IAccountRepositoryPort
 import lombok.AllArgsConstructor;
 import reactor.core.publisher.Mono;
 
+/**
+ * Application service to retrieve the balance of an account.
+ */
 @AllArgsConstructor
 public class RetriveAccountBalanceServiceImpl implements IRetriveAccountBalanceUseCase {
 

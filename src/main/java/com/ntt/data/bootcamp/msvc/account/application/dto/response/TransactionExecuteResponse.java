@@ -5,6 +5,9 @@ import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * Response DTO detailing the result of a transaction execution.
+ */
 @Getter
 @AllArgsConstructor
 public final class TransactionExecuteResponse {
@@ -21,6 +24,9 @@ public final class TransactionExecuteResponse {
   private final String executedAt;
   private final TransactionLimitInfo transactionLimitInfo;
 
+  /**
+   * Nested DTO containing transaction limit information by type.
+   */
   @Getter
   @AllArgsConstructor
   public static final class TransactionLimitInfo {

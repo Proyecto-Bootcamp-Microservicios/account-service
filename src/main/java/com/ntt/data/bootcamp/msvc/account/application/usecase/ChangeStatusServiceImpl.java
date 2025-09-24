@@ -7,6 +7,9 @@ import com.ntt.data.bootcamp.msvc.account.domain.port.out.IAccountRepositoryPort
 import lombok.AllArgsConstructor;
 import reactor.core.publisher.Mono;
 
+/**
+ * Application service to change the status of an account aggregate.
+ */
 @AllArgsConstructor
 public class ChangeStatusServiceImpl implements IChangeStatusUseCase {
 

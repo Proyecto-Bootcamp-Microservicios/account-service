@@ -6,13 +6,25 @@ import com.ntt.data.bootcamp.msvc.account.domain.enums.AccountType;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.math.BigDecimal;
-
+/**
+ * Use case for retrieving accounts with various filters.
+ */
 public interface IRetrieveAccountUseCase {
-  Mono<AccountResponse> findById(String id);                          // por id
-  Flux<AccountResponse> findAll();                                   // sin filtros
-  Flux<AccountResponse> findAllByType(AccountType type);             // por tipo
-  Flux<AccountResponse> findAllByStatus(AccountStatus status);       // por estado
-  Flux<AccountResponse> findAllByCustomer(String customerId);        // por cliente
-  Flux<AccountResponse> findAllByTypeAndStatus(AccountType type, AccountStatus status); // combinados
+  /** Retrieves an account by its internal identifier. */
+  Mono<AccountResponse> findById(String id);
+
+  /** Retrieves all accounts without filters. */
+  Flux<AccountResponse> findAll();
+
+  /** Retrieves all accounts of a given type. */
+  Flux<AccountResponse> findAllByType(AccountType type);
+
+  /** Retrieves all accounts with the given status. */
+  Flux<AccountResponse> findAllByStatus(AccountStatus status);
+
+  /** Retrieves all accounts belonging to a customer. */
+  Flux<AccountResponse> findAllByCustomer(String customerId);
+
+  /** Retrieves all accounts filtered by type and status. */
+  Flux<AccountResponse> findAllByTypeAndStatus(AccountType type, AccountStatus status);
 }

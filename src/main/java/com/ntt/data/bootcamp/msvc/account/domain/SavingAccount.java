@@ -19,7 +19,7 @@ import lombok.Getter;
 @Getter
 public class SavingAccount extends Account {
 
-  private SavingAccount(
+  protected SavingAccount(
       String id,
       String customerId,
       String customerType,

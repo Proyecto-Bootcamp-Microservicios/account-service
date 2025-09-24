@@ -12,12 +12,20 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
+/**
+ * Application service that executes a transaction on an account aggregate.
+ * Validates business rules in the domain and persists changes through the repository port.
+ */
 @AllArgsConstructor
 @Slf4j
 public class ExecuteTransactionServiceImpl implements IExecuteTransactionUseCase {
 
   private final IAccountRepositoryPort accountRepositoryPort;
 
+  /**
+   * Executes a transaction identified by account number using the provided command.
+   * Returns a detailed response including commissions and transaction limits.
+   */
   @Override
   public Mono<TransactionExecuteResponse> executeTransaction(
       String accountNumber, TransactionExecutionCommand command) {
@@ -59,6 +67,7 @@ public class ExecuteTransactionServiceImpl implements IExecuteTransactionUseCase
             });
   }
 
+  /** Builds the response to return to the caller after a successful execution. */
   private TransactionExecuteResponse createResponse(
       Account account,
       TransactionExecutionCommand command,

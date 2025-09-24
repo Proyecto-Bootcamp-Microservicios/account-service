@@ -4,6 +4,9 @@ import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * Response DTO with the current balance of an account.
+ */
 @Getter
 @AllArgsConstructor
 public class BalanceResponse {

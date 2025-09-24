@@ -18,12 +18,17 @@ import reactor.core.publisher.Mono;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * Infrastructure adapter implementing {@link IAccountRepositoryPort} using Spring Data repositories.
+ * Performs mapping between domain aggregates and persistence entities.
+ */
 @Repository
 public class AccountRepositoryAdapter extends AbstractSpringRepositoryImpl<Account, AccountCollection, String> implements IAccountRepositoryPort {
 
   private final ISpringAccountRepository repository;
   private final IAccountPersistenceMapperRegistry accountPersistenceMapperRegistry;
 
+  /** Constructs the adapter with required dependencies. */
   protected AccountRepositoryAdapter(ISpringAccountRepository repository, IAccountPersistenceMapperRegistry accountPersistenceMapperRegistry) {
     super(repository, accountPersistenceMapperRegistry);
     this.repository = repository;

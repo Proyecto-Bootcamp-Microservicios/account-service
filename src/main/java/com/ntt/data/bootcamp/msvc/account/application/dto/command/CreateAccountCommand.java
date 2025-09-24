@@ -4,10 +4,11 @@ import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-/*to json example: {
-    "customerId": "1",
-    "amount": 1
-}*/
+/**
+ * Command to request creation of an account for a customer.
+ * Example JSON:
+ * {"customerId":"1","amount":1}
+ */
 @Getter
 @AllArgsConstructor
 public final class CreateAccountCommand {

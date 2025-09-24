@@ -4,8 +4,11 @@ import com.ntt.data.bootcamp.msvc.account.application.dto.command.CreateAccountC
 import com.ntt.data.bootcamp.msvc.account.application.dto.response.AccountResponse;
 import reactor.core.publisher.Mono;
 
+/**
+ * Use case for creating checking accounts.
+ */
 public interface ICreateCheckingAccountUseCase {
+  /** Creates a checking account with zero initial balance. */
   Mono<AccountResponse> createCheckingAccountWithAmountZero(CreateAccountCommand request);
 
-  Mono<AccountResponse> createCheckingAccountWithCustomAmount(CreateAccountCommand request);
 }

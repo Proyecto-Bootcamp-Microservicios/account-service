@@ -16,12 +16,12 @@ import com.ntt.data.bootcamp.msvc.account.domain.vo.*;
 import lombok.Getter;
 
 @Getter
-public final class CheckingAccount extends Account {
-  private final BigDecimal maintenanceFee;
-  private final LocalDate nextFeeDate;
-  private final Set<AuthorizedSigner> signers;
+public class CheckingAccount extends Account {
+  protected final BigDecimal maintenanceFee;
+  protected final LocalDate nextFeeDate;
+  protected final Set<AuthorizedSigner> signers;
 
-  private CheckingAccount(
+  protected CheckingAccount(
       String id,
       String customerId,
       String customerType,
@@ -77,67 +77,8 @@ public final class CheckingAccount extends Account {
         Balance.zero("PEN"),
         Audit.create(),
         new HashSet<>(),
-        BigDecimal.valueOf(0),
+        BigDecimal.valueOf(5),
         LocalDate.now().plusMonths(1).withDayOfMonth(1),
-        new HashSet<>(),
-        TransactionLimit.of());
-  }
-
-  public static CheckingAccount of(
-      String customerId,
-      String customerType,
-      String documentType,
-      String documentNumber,
-      BigDecimal amount) {
-
-    String internalAccountNumber = AccountNumberGenerator.generateInternal();
-    String externalAccountNumber = AccountNumberGenerator.generateExternal(internalAccountNumber);
-
-    return new CheckingAccount(
-        UUID.randomUUID().toString(),
-        customerId,
-        customerType,
-        documentType,
-        documentNumber,
-        internalAccountNumber,
-        externalAccountNumber,
-        AccountType.CHECKING,
-        AccountStatus.ACTIVE,
-        Balance.of("PEN", amount),
-        Audit.create(),
-        new HashSet<>(),
-        BigDecimal.valueOf(0),
-        LocalDate.now().withDayOfMonth(1),
-        new HashSet<>(),
-        TransactionLimit.of());
-  }
-
-  public static CheckingAccount of(
-      String customerId,
-      String customerType,
-      String documentType,
-      String documentNumber,
-      BigDecimal amount,
-      Set<AccountHolder> holders) {
-
-    String internalAccountNumber = AccountNumberGenerator.generateInternal();
-    String externalAccountNumber = AccountNumberGenerator.generateExternal(internalAccountNumber);
-
-    return new CheckingAccount(
-        UUID.randomUUID().toString(),
-        customerId,
-        customerType,
-        documentType,
-        documentNumber,
-        internalAccountNumber,
-        externalAccountNumber,
-        AccountType.CHECKING,
-        AccountStatus.ACTIVE,
-        Balance.of("PEN", amount),
-        Audit.create(),
-        holders,
-        BigDecimal.valueOf(0),
-        LocalDate.now().withDayOfMonth(1),
         new HashSet<>(),
         TransactionLimit.of());
   }
@@ -177,6 +118,46 @@ public final class CheckingAccount extends Account {
         signers,
         transactionLimit);
   }
+  
+  /**
+   * Aplica el cobro de mantenimiento o suspende la cuenta si no hay fondos suficientes.
+   * Este método maneja la lógica específica del cobro de mantenimiento.
+   * @return nueva instancia de cuenta con el mantenimiento aplicado o suspendida
+   */
+  public Account processMaintenanceFeePayment() {
+
+    if (!isMaintenanceFeeDue()) {
+      throw new IllegalStateException("Maintenance fee is not due yet");
+    }
+
+    // Si no puede pagar el mantenimiento, suspender la cuenta
+    if (!canPayMaintenanceFee()) {
+      return this.changeStatus(AccountStatus.SUSPENDED);
+    }
+
+    // Si puede pagar, aplicar el cobro
+    Balance newBalance = this.balance.update(this.maintenanceFee.negate());
+    LocalDate nextFeeDate = this.nextFeeDate.plusMonths(1);
+    return new CheckingAccount(
+        this.getIdValue(),
+        this.customerId,
+        this.customerType,
+        this.getDocumentType(),
+        this.getDocumentNumber(),
+        this.getAccountNumber(),
+        this.getExternalAccountNumber(),
+        this.accountType,
+        this.status, // Mantener el estado actual (ACTIVE)
+        newBalance,
+        this.audit.update(),
+        this.holders,
+        this.maintenanceFee,
+        nextFeeDate,
+        this.signers,
+        this.transactionLimit
+    );
+  }
+
 
   @Override
   protected void validateBusinessRules() {

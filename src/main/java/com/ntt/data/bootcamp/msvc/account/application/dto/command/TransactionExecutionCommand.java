@@ -6,16 +6,13 @@ import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-/*to json example: {
-    "operationType": "DEBIT",
-    "operationDirection": "IN",
-    "amount": 100,
-    "description": "test",
-    "transactionId": "1",
-    "destinationAccountId": "1",
-    "customerDocumentType": "DNI",
-    "customerDocumentNumber": "12345678"
-}*/
+/**
+ * Command to execute a transaction on an account.
+ * Example JSON:
+ * {"operationType":"DEBIT","operationDirection":"IN","amount":100,
+ *  "description":"test","transactionId":"1","destinationAccountId":"1",
+ *  "customerDocumentType":"DNI","customerDocumentNumber":"12345678"}
+ */
 
 @Getter
 @AllArgsConstructor

@@ -6,12 +6,17 @@ import com.ntt.data.bootcamp.msvc.account.infrastructure.persistence.repository.
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+/**
+ * Base adapter bridging domain repository port with Spring Data reactive repositories.
+ * Handles mapping between domain aggregates and persistence entities.
+ */
 public abstract class AbstractSpringRepositoryImpl<D, E, ID>
     implements IGenericRepositoryPort<D, ID> {
 
   private final ISpringGenericRepository<E, ID> repository;
   private final IPersistenceMapperRegistry<D, E> persistenceMapperRegistry;
 
+  /** Constructs the adapter with a Spring repository and a mapper registry. */
   protected AbstractSpringRepositoryImpl(
       ISpringGenericRepository<E, ID> repository, IPersistenceMapperRegistry<D, E> persistenceMapperRegistry) {
     this.repository = repository;

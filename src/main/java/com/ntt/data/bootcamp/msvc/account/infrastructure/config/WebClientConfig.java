@@ -5,9 +5,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
 
+/**
+ * Spring configuration providing a load-balanced {@link WebClient.Builder}.
+ */
 @Configuration
 public class WebClientConfig {
 
+  /** Creates a load-balanced WebClient builder for inter-service communication. */
   @Bean
   @LoadBalanced
   WebClient.Builder webClientBuilder() {

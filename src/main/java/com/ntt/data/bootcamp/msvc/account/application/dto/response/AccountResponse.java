@@ -7,6 +7,9 @@ import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * Response DTO representing a bank account state for API consumers.
+ */
 @AllArgsConstructor
 @Getter
 public final class AccountResponse {

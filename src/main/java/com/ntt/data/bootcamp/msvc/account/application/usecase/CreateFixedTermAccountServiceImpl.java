@@ -4,19 +4,25 @@ import com.ntt.data.bootcamp.msvc.account.application.dto.command.CreateAccountC
 import com.ntt.data.bootcamp.msvc.account.application.dto.response.AccountResponse;
 import com.ntt.data.bootcamp.msvc.account.application.port.in.ICreateFixedTermAccountUseCase;
 import com.ntt.data.bootcamp.msvc.account.application.port.out.IRetriveCustomerByIdPort;
+import com.ntt.data.bootcamp.msvc.account.application.port.out.IValidateDebtPort;
 import com.ntt.data.bootcamp.msvc.account.domain.FixedTermAccount;
 import com.ntt.data.bootcamp.msvc.account.domain.port.out.IAccountRepositoryPort;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
+/**
+ * Application service to create fixed-term accounts.
+ */
 @AllArgsConstructor
 @Slf4j
 public class CreateFixedTermAccountServiceImpl implements ICreateFixedTermAccountUseCase {
 
   private final IRetriveCustomerByIdPort retriveCustomerByIdPort;
   private final IAccountRepositoryPort accountRepositoryPort;
+  private final IValidateDebtPort validateDebtPort;
 
+  /** Creates a new fixed-term account based on the provided command. */
   @Override
   public Mono<AccountResponse> createFixedTermAccount(CreateAccountCommand command) {
     return retriveCustomerByIdPort
@@ -38,6 +44,9 @@ public class CreateFixedTermAccountServiceImpl implements ICreateFixedTermAccoun
               }
               return Mono.just(customerResponse);
             })
+        .flatMap(customerResponse ->
+            validateCustomerDebt(customerResponse.getId())
+                .then(Mono.just(customerResponse)))
         .flatMap(
             customerResponse -> {
               FixedTermAccount checkingAccount =
@@ -61,5 +70,20 @@ public class CreateFixedTermAccountServiceImpl implements ICreateFixedTermAccoun
                     account.getBalance().getCurrency().getCurrencyCode(),
                     account.getCreatedAt(),
                     account.getUpdatedAt()));
+  }
+
+  private Mono<Void> validateCustomerDebt(String customerId) {
+    return validateDebtPort.validateDebt(customerId)
+        .flatMap(eligibilityResponse -> {
+          if (eligibilityResponse.getIsEligible() == null || !eligibilityResponse.getIsEligible()) {
+            String reason = eligibilityResponse.getReason() != null ?
+                eligibilityResponse.getReason() : "Customer has overdue debts";
+            return Mono.error(new IllegalArgumentException(
+                "Customer cannot create account due to debt: " + reason));
+          }
+          return Mono.empty();
+        })
+        .switchIfEmpty(Mono.error(new IllegalArgumentException(
+            "Unable to validate customer debt status"))).then();
   }
 }

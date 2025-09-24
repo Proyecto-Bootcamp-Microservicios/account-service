@@ -9,6 +9,9 @@ import lombok.AllArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+/**
+ * Application service implementing the account retrieval use cases.
+ */
 @AllArgsConstructor
 public class RetrieveAccountServiceImpl implements IRetrieveAccountUseCase {
 

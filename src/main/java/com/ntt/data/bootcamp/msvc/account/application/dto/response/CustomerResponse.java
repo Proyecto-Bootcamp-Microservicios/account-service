@@ -19,4 +19,5 @@ public final class CustomerResponse {
   private String email;
   private boolean active;
   private LocalDateTime createdAt;
+  private String customerProfile;
 }

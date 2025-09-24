@@ -6,11 +6,13 @@ import java.time.LocalDate;
 import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
 @AllArgsConstructor
+@NoArgsConstructor
 public class TransactionLimitCollection {
   private Map<OperationType, Integer> maxFreeTransactions;
   private Map<OperationType, BigDecimal> fixedCommissions;

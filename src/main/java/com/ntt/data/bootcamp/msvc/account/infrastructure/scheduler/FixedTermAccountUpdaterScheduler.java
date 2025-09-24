@@ -9,6 +9,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
+/**
+ * Scheduler that updates fixed-term accounts operation date when a new period starts.
+ */
 @Component
 @AllArgsConstructor
 @Slf4j
@@ -16,6 +19,7 @@ public class FixedTermAccountUpdaterScheduler {
 
   private final IAccountRepositoryPort accountRepositoryPort;
 
+  /** Runs daily at 01:00 to evaluate and update fixed-term accounts. */
   @Scheduled(cron = "0 0 1 * * ?")
   public void updateFixedTermAccounts() {
     accountRepositoryPort

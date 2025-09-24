@@ -12,6 +12,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Scheduler that captures a snapshot of all accounts' balances every day at 23:59.
+ */
 @Component
 @AllArgsConstructor
 @Slf4j
@@ -20,6 +23,7 @@ public class DailyBalanceScheduler {
   private final IAccountRepositoryPort accountRepository;
   private final ISpringDailyBalanceSnapshotRepository dailyBalanceRepository;
 
+  /** Triggers the daily capture job using a cron expression at 23:59. */
   @Scheduled(cron = "0 59 23 * * ?") // 23:59 cada día
   public void captureDailyBalances() {
     log.info("Starting daily balance capture for {}", LocalDate.now());
